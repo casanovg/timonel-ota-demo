@@ -25,7 +25,7 @@
 #include <WiFiClientSecure.h>
 
 extern "C" {
-    #include <ihex-parser.h>
+#include <ihex-parser.h>
 }
 
 #ifndef SSID
@@ -95,10 +95,10 @@ void setup() {
         }
     }
 
-    String fw_version = client.readStringUntil('\n');
+    String http_string = client.readStringUntil('\n');
 
     Serial.println("================================================");
-    Serial.println("Latest firwmare version for ATTiny85: " + fw_version);
+    Serial.println("Latest firwmare version for ATTiny85: " + http_string);
     Serial.println("================================================");
     //Serial.println("Closing connection");
 
@@ -112,7 +112,7 @@ void setup() {
 
     Serial.println("................................................");
 
-    url = "/casanovg/timonel-ota-demo/master/fw-attiny85/payload-" + fw_version + ".h";
+    url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + http_string + ".hex";
     Serial.print("URL Request: ");
     Serial.println(url);
 
@@ -130,7 +130,11 @@ void setup() {
         }
     }
 
-    String firmware_file = client.readStringUntil('}');
+    http_string = client.readStringUntil('\0');
+
+    // uint8_t ix = http_string.length() + 1;
+    // char firmware_file[ix];
+    // strcpy(firmware_file, http_string.c_str());  // or pass &s[0]
 
     // String firmware_file = "";
     // String firmware_line = client.readStringUntil('\n');
@@ -142,7 +146,10 @@ void setup() {
 
     Serial.println("================================================");
     Serial.println("Firwmare dump:");
-    Serial.println(firmware_file);
+    // for (int i = 0; i < ix; i++) {
+    //     Serial.print((char)firmware_file[i]);
+    // }
+    Serial.print(http_string);
     Serial.println("================================================");
 
     // while (client.connected()) {
@@ -229,41 +236,39 @@ void ClrScr(void) {
     Serial.print("[H");   // cursor to home command
 }
 
-// Function HttpsGet
-String HttpsGet(char *host, String url, char[] fingerprint) {
+// // Function HttpsGet
+// String HttpsGet(char* host, String url, char[] fingerprint) {
+//     // Use WiFiClientSecure class to create TLS connection
+//     WiFiClientSecure client;
+//     Serial.print("Connecting to web site: ");
+//     Serial.println(host);
 
-    // Use WiFiClientSecure class to create TLS connection
-    WiFiClientSecure client;
-    Serial.print("Connecting to web site: ");
-    Serial.println(host);
+//     Serial.printf("Using fingerprint: %s\n\r", fingerprint);
+//     client.setFingerprint(fingerprint);
 
-    Serial.printf("Using fingerprint: %s\n\r", fingerprint);
-    client.setFingerprint(fingerprint);
+//     if (!client.connect(host, https_port)) {
+//         Serial.println("Connection failed");
+//         return;
+//     }
 
-    if (!client.connect(host, https_port)) {
-        Serial.println("Connection failed");
-        return;
-    }
+//     // Read the latest firmware available to write to the slave device
+//     String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/latest-version.md";
+//     Serial.print("URL Request: ");
+//     Serial.println(url);
 
-    // Read the latest firmware available to write to the slave device
-    String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/latest-version.md";
-    Serial.print("URL Request: ");
-    Serial.println(url);
+//     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+//                  "Host: " + host + "\r\n" +
+//                  "User-Agent: TimonelTwiMOtaESP8266\r\n" +
+//                  "Connection: close\r\n\r\n");
 
-    client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                 "Host: " + host + "\r\n" +
-                 "User-Agent: TimonelTwiMOtaESP8266\r\n" +
-                 "Connection: close\r\n\r\n");
+//     Serial.println("Request sent");
+//     while (client.connected()) {
+//         String line = client.readStringUntil('\n');
+//         if (line == "\r") {
+//             Serial.println("Headers received");
+//             break;
+//         }
+//     }
 
-    Serial.println("Request sent");
-    while (client.connected()) {
-        String line = client.readStringUntil('\n');
-        if (line == "\r") {
-            Serial.println("Headers received");
-            break;
-        }
-    }
-
-    String fw_version = client.readStringUntil('\n');
-
-}
+//     String fw_version = client.readStringUntil('\n');
+// }

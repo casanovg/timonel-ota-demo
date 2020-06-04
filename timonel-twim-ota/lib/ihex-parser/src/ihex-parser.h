@@ -24,7 +24,7 @@
 int parseRaw(char *hexfile, unsigned char *buffer, int *startAddr, int *endAddr);
 int parseIntelHex(char *hexfile, unsigned char *buffer, int *startAddr, int *endAddr); /* taken from bootloadHID */
 int parseUntilColon(FILE *fp);                                                         /* taken from bootloadHID */
-int parseHex(FILE *fp, int numDigits);                                                 /* taken from bootloadHID */
+int parseHex(FILE *p_file, uint8_t num_digits);                                                 /* taken from bootloadHID */
 int use_ansi = 0;
 
 // Globals
