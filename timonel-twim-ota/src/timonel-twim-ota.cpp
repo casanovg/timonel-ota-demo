@@ -17,21 +17,7 @@
   ----------------------------------------------------------------------------
 */
 
-#include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include <FS.h>
-#include <NbMicro.h>
-#include <TimonelTwiM.h>
-#include <WiFiClientSecure.h>
-
-extern "C" {
-#include <ihex-parser.h>
-}
-
-#ifndef SSID
-#define SSID "Nicebots.com"
-#define PASS "R2-D2 C-3P0"
-#endif  // SSID
+#include "timonel-twim-ota.h"
 
 const char* ssid = SSID;
 const char* password = PASS;
@@ -110,7 +96,7 @@ void setup() {
         return;
     }
 
-    Serial.println("................................................");
+    Serial.println("\r................................................");
 
     url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + http_string + ".hex";
     Serial.print("URL Request: ");
@@ -132,25 +118,34 @@ void setup() {
 
     http_string = client.readStringUntil('\0');
 
-    // uint8_t ix = http_string.length() + 1;
-    // char firmware_file[ix];
-    // strcpy(firmware_file, http_string.c_str());  // or pass &s[0]
+	HexParser ihex;
 
-    // String firmware_file = "";
-    // String firmware_line = client.readStringUntil('\n');
-    // while (firmware_line != "") {
-    //     firmware_line = client.readStringUntil('\n');
-    //     Serial.println(firmware_line);
-    //     firmware_file += firmware_line + "\n\r";
-    //}
+    uint16_t payload_size = ihex.GetIHexSize(http_string);
+    payload_size += 10;
+    uint8_t payload[payload_size];
+    uint8_t line_count = 0;
+	//uint8_t *p_payload = &payload;
 
     Serial.println("================================================");
     Serial.println("Firwmare dump:");
-    // for (int i = 0; i < ix; i++) {
-    //     Serial.print((char)firmware_file[i]);
-    // }
-    Serial.print(http_string);
-    Serial.println("================================================");
+
+    ihex.GetIHexPayload(http_string, payload);
+    
+    Serial.println("::::::::::::::::::::::::::::::::::::::::::::::::");
+
+	uint8_t nl = 0;
+
+    Serial.printf("%02d) ", line_count++);
+	for (uint16_t q = 0; q <= payload_size; q++) {
+		Serial.printf(".%02X", payload[q]);
+		if (nl++ == 15) {
+			Serial.print("\r\n");
+            Serial.printf("%02d) ", line_count++);
+			nl = 0;
+		}
+	}
+
+    Serial.println("\r================================================");
 
     // while (client.connected()) {
     //     String line = client.readStringUntil('\n');
