@@ -118,9 +118,9 @@ void setup() {
 
     http_string = client.readStringUntil('\0');
 
-	HexParser ihex;
+    HexParser ihex;
 
-    uint16_t payload_size = ihex.GetIHexSize(http_string);
+    uint16_t payload_size = ihex.GetIHexSize(http_string) + 4;
     payload_size += 10;
     Serial.printf("Array size: %d\n\r", payload_size);
 
@@ -134,36 +134,36 @@ void setup() {
     uint8_t nl = 0;
 
     Serial.printf("%02d) ", line_count++);
-	for (uint16_t q = 0; q < payload_size; q++) {
-		Serial.printf(".%02X", payload[q]);
-		if (nl++ == 15) {
-			Serial.print("\r\n");
+    for (uint16_t q = 0; q < payload_size; q++) {
+        Serial.printf(".%02X", payload[q]);
+        if (nl++ == 15) {
+            Serial.print("\r\n");
             Serial.printf("%02d) ", line_count++);
-			nl = 0;
-		}
-	}
+            nl = 0;
+        }
+    }
 
     Serial.println("\n\r================================================");
     Serial.println("Firwmare dump:");
 
-    ihex.GetIHexPayload(http_string, payload);
-    
-    Serial.println("\r::::::::::::::::::::::::::::::::::::::::::::::::");
+    ihex.ParseIHexFormat(http_string, payload);
 
-	line_count = 0;
+    Serial.println("\r\n::::::::::::::::::::::::::::::::::::::::::::::::");
+
+    line_count = 0;
     nl = 0;
 
     Serial.printf("%02d) ", line_count++);
-	for (uint16_t q = 0; q < payload_size; q++) {
-		Serial.printf(".%02X", payload[q]);
-		if (nl++ == 15) {
-			Serial.print("\r\n");
+    for (uint16_t q = 0; q < payload_size; q++) {
+        Serial.printf(".%02X", payload[q]);
+        if (nl++ == 15) {
+            Serial.print("\r\n");
             Serial.printf("%02d) ", line_count++);
-			nl = 0;
-		}
-	}
+            nl = 0;
+        }
+    }
 
-    Serial.println("\r================================================");
+    Serial.println("\r\n================================================");
 
     // while (client.connected()) {
     //     String line = client.readStringUntil('\n');

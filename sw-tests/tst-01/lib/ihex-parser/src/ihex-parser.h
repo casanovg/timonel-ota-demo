@@ -8,19 +8,25 @@
 #ifndef _IHEX_PARSER_H_
 #define _IHEX_PARSER_H_
 
-#include <Arduino.h>
+#include <string>
 
+using namespace std;
+
+namespace hexparser {
+    
 #define IHEX_START_CODE ':'
 
 class HexParser {
    public:
     HexParser();
     ~HexParser();
-    bool ParseIHexFormat(String serialized_file, uint8_t *payload);
-    uint16_t GetIHexSize(String serialized_file);
+    bool ParseIHexFormat(string serialized_file, uint8_t *payload);
+    uint16_t GetIHexSize(string serialized_file);
 
    protected:
    private:
 };
+
+}  // namespace hexparser
 
 #endif  // _IHEX_PARSER_H_
