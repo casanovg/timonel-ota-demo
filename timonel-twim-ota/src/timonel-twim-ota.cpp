@@ -120,28 +120,13 @@ void setup() {
 
     HexParser ihex;
 
-    uint16_t payload_size = ihex.GetIHexSize(http_string) + 4;
-    payload_size += 10;
+    uint16_t payload_size = ihex.GetIHexSize(http_string);
     Serial.printf("Array size: %d\n\r", payload_size);
 
     uint8_t payload[payload_size];
 
-    for (uint16_t q = 0; q <= payload_size; q++) {
-        payload[q] = 153;
-    }
-
     uint8_t line_count = 0;
     uint8_t nl = 0;
-
-    Serial.printf("%02d) ", line_count++);
-    for (uint16_t q = 0; q < payload_size; q++) {
-        Serial.printf(".%02X", payload[q]);
-        if (nl++ == 15) {
-            Serial.print("\r\n");
-            Serial.printf("%02d) ", line_count++);
-            nl = 0;
-        }
-    }
 
     Serial.println("\n\r================================================");
     Serial.println("Firwmare dump:");
