@@ -10,11 +10,13 @@
 
 #include <Arduino.h>
 
+#define IHEX_START_CODE ':'
+
 class HexParser {
    public:
     HexParser();
     ~HexParser();
-    void GetIHexPayload(String serialized_file, uint8_t *payload);
+    bool ParseIHexFormat(String serialized_file, uint8_t *payload);
     uint16_t GetIHexSize(String serialized_file);
 
    protected:
