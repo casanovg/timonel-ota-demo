@@ -14,10 +14,10 @@
 #include <ihex-parser.h>
 
 #ifndef SSID
-//#define SSID "Nicebots.com"
-//#define PASS "R2-D2 C-3P0"
-#define SSID "HTA Buen Ayre"
-#define PASS "BB-8 C-3P0"
+#define SSID "Nicebots.com"
+#define PASS "R2-D2 C-3P0"
+// #define SSID "HTA Buen Ayre"
+// #define PASS "BB-8 C-3P0"
 #endif  // SSID
 
 #endif // _TIMONEL_TWIM_OTA_H_
