@@ -39,7 +39,7 @@ bool HexParser::ParseIHexFormat(String serialized_file, uint8_t *payload) {
                     uint8_t ihex_data = strtoul(serialized_file.substring(data_pos, data_pos + 2).c_str(), 0, 16);
                     record_check += ihex_data;
                     payload[payload_ix] = ihex_data;
-                    Serial.printf(":%02X", ihex_data);
+                    Serial.printf(".%02X", ihex_data);
                     payload_ix++;
                 }
                 record_check = (~((byte_count + ((address >> 8) & 0xFF) + (address & 0xFF) + record_type + record_check) & 0xFF)) + 1;
@@ -70,7 +70,7 @@ uint16_t HexParser::GetIHexSize(String serialized_file) {
             }
         }
     }
-    Serial.printf("File length: %d\r\n", file_length);
+    Serial.printf("\r\nFile length: %d\r\n", file_length);
     Serial.printf("Data length: %d\r\n", file_data_length);
     return file_data_length;
 }

@@ -134,7 +134,7 @@ void setup() {
     if (ihex.ParseIHexFormat(http_string, payload)) {
         Serial.println("\r\nPAYLOAD ERROR!\n\r");
     }
-    Serial.println("\r\n::::::::::::::::::::::::::::::::::::::::::::::::");
+    Serial.println("\r::::::::::::::::::::::::::::::::::::::::::::::::");
     Serial.printf("%02d) ", line_count++);
     for (uint16_t q = 0; q < payload_size; q++) {
         Serial.printf(".%02X", payload[q]);
