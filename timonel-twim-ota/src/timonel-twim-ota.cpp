@@ -24,8 +24,11 @@ const char fingerprint[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78
 
 // Prototypes
 void ClrScr(void);
+uint8_t Format(void);
+uint8_t ListFiles(void);
 String ReadFile(const char file_name[]);
 uint8_t WriteFile(const char file_name[], const String file_data);
+uint8_t Rename(const char source_file_name[], const char destination_file_name[]);
 String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]);
 
 /*  ___________________
@@ -42,6 +45,13 @@ void setup() {
     Serial.begin(115200);
     ClrScr();
     Serial.printf_P("\n\r");
+    Serial.printf_P("......................................\n\r");
+    Serial.printf_P(".          TIMONEL-TWIM-OTA          .\n\r");
+    Serial.printf_P("......................................\n\r");
+
+    // List all filesystem files
+    //Format();
+    ListFiles();
 
     // Read the running ATtiny85 firmware version from the filesystem
     String fw_current_loc = ReadFile("/fw-onboard.md");
@@ -64,7 +74,7 @@ void setup() {
     String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-latest.md";
     String fw_latest_rem = GetHttpDocument(url, terminator, host, port, fingerprint);
     Serial.printf_P(".......................................................\n\r");
-    Serial.printf_P("Latest firwmare version available for ATtiny85: %s\n\r", fw_latest_rem.c_str());
+    Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_rem.c_str());
     Serial.printf_P(".......................................................\n\r");
 
     //if (fw_current_loc != fw_latest_rem) {
@@ -105,16 +115,14 @@ void setup() {
         delete ihex;
         Serial.printf_P("\n\r================================================\n\n\r");
 
-        // Update ATtiny85 firmware ...
-
-        // Detect the ATtiny85 application I2C address
+        // Detect the ATtiny85 application TWI (I2C) address
         TwiBus *twi_bus = new TwiBus(SDA, SCL);
         uint8_t twi_address = twi_bus->ScanBus();
         delete twi_bus;
         NbMicro *micro = nullptr;
         Timonel *timonel = nullptr;
         Serial.printf_P("\n\rTWI address detected: %d", twi_address);
-        // If the ATtiny85 is running a user application ...
+        // If the address is in the 36-63 range, the ATtiny85 is running a user application ...
         if (twi_address >= HIG_TML_ADDR) {
             Serial.printf_P(" device running an user application\n\r");
             micro = new NbMicro(twi_address, SDA, SCL);
@@ -124,39 +132,27 @@ void setup() {
             Serial.printf_P("\n\rIs the application stopped?\n\r");
         }
         delay(1000);
-        // If the ATtiny85 is running Timonel bootloader
+        // If the address is in the 08-35 range, the ATtiny85 is running Timonel bootloader ...
         if ((twi_address < HIG_TML_ADDR) && (twi_address != 0)) {
             Serial.printf_P(" device running Timonel bootloader\n\r");
             timonel = new Timonel(twi_address, SDA, SCL);
             timonel->GetStatus();
-
+            // Upload the new user application to the ATtiny85
             USE_SERIAL.printf_P("\n\rBootloader Cmd >>> Firmware upload to flash memory, \x1b[5mPLEASE WAIT\x1b[0m ...");
             uint8_t errors = timonel->UploadApplication(payload, payload_size);
             USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
             if (errors == 0) {
-                USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!      \n\r");
+                USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!                          \n\r");
                 delay(500);
+                // Run the new user application
                 timonel->RunApplication();
-                Serial.printf_P("\n\rIf we're lucky, application should be running by now ... \n\r");
-
-                // Save the latest firmware into the filesystem
+                Serial.printf_P("\n\rThe user application should be running by now ... \n\r");
+                // Save the latest firmware version info to the filesystem
                 WriteFile("/fw-onboard.md", fw_latest_rem);
-
-                // File file = SPIFFS.open("/fw-current-ver.txt", "w+");
-                // if (!file) {
-                //     Serial.printf_P("Error opening file for writing\n\r");
-                //     //return;
-                // }
-                // uint16 bytes_written = file.print(fw_latest_rem);
-                // if (bytes_written > 0) {
-                //     Serial.printf_P("ATtiny85 firmware version info updated (%d bytes saved) ...\n\r", bytes_written);
-                // } else {
-                //     Serial.printf_P("ATtin85 firmware version info update failed!\n\r");
-                // }
-                // file.close();
-
+                // Move the firmware name from "latest" to "onboard"
+                Rename("/fw-latest.hex", "/fw-onboard.hex");
             } else {
-                USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b error! (%d)           \n\r", errors);
+                USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b error! (%d)                          \n\r", errors);
             }
             delete timonel;
         }
@@ -244,21 +240,21 @@ String GetHttpDocument(String url, char terminator, const char host[], const int
 String ReadFile(const char file_name[]) {
     String file_data = "";
     if (SPIFFS.begin()) {
-        Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+        //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system\n\r", __func__);
         // Mount error!
     }
-    File file = SPIFFS.open("/fw-current-ver.txt", "r");
-    Serial.printf_P("[%s] Reading \"%s\" file\n\r", __func__, file_name);
+    File file = SPIFFS.open(file_name, "r");
+    //Serial.printf_P("[%s] Reading \"%s\" file\n\r", __func__, file_name);
     if (file && file.size()) {
         while (file.available()) {
             file_data += char(file.read());
         }
         file.close();
-        Serial.printf_P("%s\n\r", file_data.c_str());
+        //Serial.printf_P("%s\n\r", file_data.c_str());
     } else {
-        Serial.printf_P("[%s] No data!\n\r", __func__);
+        Serial.printf_P("[%s] Warning: File empty or unavailable!\n\r", __func__);
     }
     return file_data;
     SPIFFS.end();
@@ -268,26 +264,86 @@ String ReadFile(const char file_name[]) {
 uint8_t WriteFile(const char file_name[], const String file_data) {
     uint8_t errors = 0;
     if (SPIFFS.begin()) {
-        Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+        //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
+        errors += 1;
         // Mount error!
     }
     // Save file data into the filesystem
-    File file = SPIFFS.open("file_name", "w");
+    File file = SPIFFS.open(file_name, "w");
     if (!file) {
         Serial.printf_P("[%s] Error opening file for writing!", __func__);
-        errors += 1;
+        errors += 2;
         // File opening error!
     }
-    Serial.printf_P("[%s] Writing \"%s\" file ...\n\r", __func__, file_name);
+    //Serial.printf_P("[%s] Writing \"%s\" file ...\n\r", __func__, file_name);
     uint16 bytes_written = file.print(file_data);
     if (bytes_written > 0) {
-        Serial.printf_P("[%s] File write successful (%d bytes saved) ...\n\r", __func__, bytes_written);
+        //Serial.printf_P("[%s] File write successful (%d bytes saved) ...\n\r", __func__, bytes_written);
     } else {
         Serial.printf_P("[%s] File writing failed!", __func__);
-        errors += 2;
+        errors += 3;
         // File writing error!
+    }
+    SPIFFS.end();
+    return errors;
+}
+
+// Function ListFiles
+uint8_t ListFiles(void) {
+    uint8_t errors = 0;
+    if (SPIFFS.begin()) {
+        //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
+        errors += 1;
+        // Mount error!
+    }
+    //Serial.printf_P("[%s] Listing all filesystem files ...\n\r", __func__);
+    Dir dir = SPIFFS.openDir("");
+    while (dir.next()) {
+        Serial.printf("|-- %s - %d bytes\n\r", dir.fileName().c_str(), (int)dir.fileSize());
+    }
+    SPIFFS.end();
+    return errors;
+}
+
+// Function Format
+uint8_t Format(void) {
+    uint8_t errors = 0;
+    if (SPIFFS.begin()) {
+        //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
+        errors += 1;
+        // Mount error!
+    }
+    Serial.printf_P("[%s] Formatting the SPIFFS filesystem ...\n\r", __func__);
+    errors += SPIFFS.format();
+    if (errors) {
+        Serial.printf_P("[%s] Error: Unable to format the filesystem!\n\r", __func__);
+    }
+    SPIFFS.end();
+    return errors;
+}
+
+// Function Rename (If destination exists, overwrites it)
+uint8_t Rename(const char source_file_name[], const char destination_file_name[]) {
+    uint8_t errors = 0;
+    if (SPIFFS.begin()) {
+        //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
+        errors += 1;
+        // Mount error!
+    }
+    SPIFFS.remove(destination_file_name);  // This allows overwriting
+    errors += SPIFFS.rename(source_file_name, destination_file_name);
+    if (errors) {
+        //Serial.printf_P("[%s] File renamed successfully ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] File renaming failed!\n\r", __func__);
     }
     SPIFFS.end();
     return errors;
