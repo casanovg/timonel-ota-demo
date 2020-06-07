@@ -40,14 +40,12 @@ void setup() {
     const int port = 443;
 
     Serial.begin(115200);
+    ClrScr();
     Serial.printf_P("\n\r");
 
-    // @@@@@@@@@@@@@@@@@@@@@@@@@
-
     // Read the running ATtiny85 firmware version from the filesystem
-    String fw_current_loc = ReadFile("/fw-current-ver.txt");
-
-    // @@@@@@@@@@@@@@@@@@@@@@@@@
+    String fw_current_loc = ReadFile("/fw-onboard.md");
+    Serial.printf_P("ATtiny85 firmware onboard (TBC): %s\n\r", fw_current_loc.c_str());
 
     // Open WiFi connection to access the internet
     Serial.printf_P("Connecting to WiFi: ");
@@ -85,7 +83,6 @@ void setup() {
         // Parse the new firmware file
         HexParser *ihex = new HexParser();
         uint16_t payload_size = ihex->GetIHexSize(fw_file_loc);
-        //Serial.printf_P("\n\rPayload size: %d\n\r", payload_size);
         uint8_t payload[payload_size];
         uint8_t line_count = 0;
         uint8_t nl = 0;
@@ -132,7 +129,10 @@ void setup() {
             Serial.printf_P(" device running Timonel bootloader\n\r");
             timonel = new Timonel(twi_address, SDA, SCL);
             timonel->GetStatus();
+
+            USE_SERIAL.printf_P("\n\rBootloader Cmd >>> Firmware upload to flash memory, \x1b[5mPLEASE WAIT\x1b[0m ...");
             uint8_t errors = timonel->UploadApplication(payload, payload_size);
+            USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
             if (errors == 0) {
                 USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!      \n\r");
                 delay(500);
@@ -140,7 +140,7 @@ void setup() {
                 Serial.printf_P("\n\rIf we're lucky, application should be running by now ... \n\r");
 
                 // Save the latest firmware into the filesystem
-                WriteFile("/fw-current-ver.txt", fw_latest_rem);
+                WriteFile("/fw-onboard.md", fw_latest_rem);
 
                 // File file = SPIFFS.open("/fw-current-ver.txt", "w+");
                 // if (!file) {
@@ -250,7 +250,7 @@ String ReadFile(const char file_name[]) {
         // Mount error!
     }
     File file = SPIFFS.open("/fw-current-ver.txt", "r");
-    Serial.printf_P("[%s] Reading file %s\n\r", __func__, file_name);
+    Serial.printf_P("[%s] Reading \"%s\" file\n\r", __func__, file_name);
     if (file && file.size()) {
         while (file.available()) {
             file_data += char(file.read());
@@ -277,13 +277,18 @@ uint8_t WriteFile(const char file_name[], const String file_data) {
     File file = SPIFFS.open("file_name", "w");
     if (!file) {
         Serial.printf_P("[%s] Error opening file for writing!", __func__);
+        errors += 1;
         // File opening error!
     }
+    Serial.printf_P("[%s] Writing \"%s\" file ...\n\r", __func__, file_name);
     uint16 bytes_written = file.print(file_data);
     if (bytes_written > 0) {
         Serial.printf_P("[%s] File write successful (%d bytes saved) ...\n\r", __func__, bytes_written);
     } else {
         Serial.printf_P("[%s] File writing failed!", __func__);
+        errors += 2;
+        // File writing error!
     }
     SPIFFS.end();
+    return errors;
 }
