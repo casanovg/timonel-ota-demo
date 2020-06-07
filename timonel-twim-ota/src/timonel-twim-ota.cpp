@@ -4,7 +4,7 @@
   Timonel OTA Demo v1.0
   ----------------------------------------------------------------------------
   This demo updates an ESP8266 I2C master over-the-air:
-  1-The ESP9266 firmware runs Timonel bootloader master amd has an ATTtiny85
+  1-The ESP9266 firmware runs Timonel bootloader master amd has an ATttiny85
     application compiled inside.
   2-After an OTA update, the ESP8266 Timonel master resets the ATtiny85 to
     start Timonel bootloader on it.
@@ -24,9 +24,15 @@ const char fingerprint[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78
 
 // Prototypes
 void ClrScr(void);
+String ReadFile(const char file_name[]);
+uint8_t WriteFile(const char file_name[], const String file_data);
 String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]);
 
-// Setup block
+/*  ___________________
+   |                   | 
+   |    Setup block    |
+   |___________________|
+*/
 void setup() {
     const char ssid[] = SSID;
     const char password[] = PASS;
@@ -34,108 +40,74 @@ void setup() {
     const int port = 443;
 
     Serial.begin(115200);
-    Serial.println("");
+    Serial.printf_P("\n\r");
 
     // @@@@@@@@@@@@@@@@@@@@@@@@@
 
-    if (SPIFFS.begin()) {
-        //Serial.println("SPIFFS filesystem mounted with success\r\n");
-    } else {
-        Serial.println("Error mounting the SPIFFS file system\r\n");
-        return;
-    }
-
-    String fw_current = "";
-    File file = SPIFFS.open("/fw-current-ver.txt", "r");
-    Serial.printf("Reading current ATtiny85 firmware version: ");
-    if (file && file.size()) {
-        while (file.available()) {
-            fw_current += char(file.read());
-        }
-        file.close();
-        Serial.printf("s%\n\r", fw_current.c_str());
-    } else {
-        Serial.printf("none\n\r");
-    }
+    // Read the running ATtiny85 firmware version from the filesystem
+    String fw_current_loc = ReadFile("/fw-current-ver.txt");
 
     // @@@@@@@@@@@@@@@@@@@@@@@@@
 
-    Serial.print("Connecting to WiFi: ");
-    Serial.println(ssid);
+    // Open WiFi connection to access the internet
+    Serial.printf_P("Connecting to WiFi: ");
+    Serial.printf_P(ssid);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
-        Serial.print(".");
+        Serial.printf_P(".");
     }
-    Serial.println("");
-    Serial.printf("WiFi connected! IP address: %s\n\r", WiFi.localIP().toString().c_str());
+    Serial.printf_P("\n\r");
+    Serial.printf_P("WiFi connected! IP address: %s\n\r", WiFi.localIP().toString().c_str());
 
     // Check the latest firmware version available for the slave device
     char terminator = '\n';
-    String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/latest-version.md";
-    String fw_latest = GetHttpDocument(url, terminator, host, port, fingerprint);
+    String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-latest.md";
+    String fw_latest_rem = GetHttpDocument(url, terminator, host, port, fingerprint);
+    Serial.printf_P(".......................................................\n\r");
+    Serial.printf_P("Latest firwmare version available for ATtiny85: %s\n\r", fw_latest_rem.c_str());
+    Serial.printf_P(".......................................................\n\r");
 
-    Serial.println(".......................................................");
-    Serial.println("Latest firwmare version available for ATTiny85: " + fw_latest);
-    Serial.println(".......................................................");
-
-    if (fw_current != fw_latest) {
+    //if (fw_current_loc != fw_latest_rem) {
+    if (true) {
         // Update needed: get the latest firmware available for the ATtiny85 from internet
         terminator = '\0';
-        url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest + ".hex";
+        url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_rem + ".hex";
         String fw_file_rem = GetHttpDocument(url, terminator, host, port, fingerprint);
 
         // Save the latest firmware into the filesystem
-        File file = SPIFFS.open("/fw-latest-dat.txt", "w+");
-        if (!file) {
-            Serial.println("Error opening file for writing");
-            //return;
-        }
-        uint16 bytes_written = file.print(fw_file_rem);
-        if (bytes_written > 0) {
-            Serial.printf("File write successful (%d bytes saved) ...", bytes_written);
-        } else {
-            Serial.printf("File write failed!");
-        }
-        // Read the save firmware file
-        String fw_file_loc = "";
-        file.seek(0, SeekSet);
-        if (file && file.size()) {
-            //Serial.println("\r\nDumping saved firmware file:");
-            while (file.available()) {
-                fw_file_loc += char(file.read());
-            }
-            file.close();
-            //Serial.println(fw_file_loc);
-        }
-        //file.close();        
+        WriteFile("/fw-latest.hex", fw_file_rem);
+
+        // Read the saved firmware file
+        String fw_file_loc = ReadFile("/fw-latest.hex");
+
         // Parse the new firmware file
         HexParser *ihex = new HexParser();
         uint16_t payload_size = ihex->GetIHexSize(fw_file_loc);
-        Serial.printf("\n\rPayload size: %d\n\r", payload_size);
+        //Serial.printf_P("\n\rPayload size: %d\n\r", payload_size);
         uint8_t payload[payload_size];
         uint8_t line_count = 0;
         uint8_t nl = 0;
-        Serial.println("\n\r================================================");
-        Serial.println("Firwmare dump:");
+        Serial.printf_P("\n\r================================================\n\r");
+        Serial.printf_P("Firwmare dump:\n\r");
         if (ihex->ParseIHexFormat(fw_file_loc, payload)) {
-            Serial.println("\r\nPayload checksum error!\n\r");
-            //Serial.println("\r::::::::::::::::::::::::::::::::::::::::::::::::");
+            Serial.printf_P("\n\rPayload checksum error!\n\n\r");
+            //Serial.printf_P("\r::::::::::::::::::::::::::::::::::::::::::::::::\n\r");
         } else {
-            Serial.printf("%02d) ", line_count++);
+            Serial.printf_P("%02d) ", line_count++);
             for (uint16_t q = 0; q < payload_size; q++) {
-                Serial.printf(".%02X", payload[q]);
+                Serial.printf_P(".%02X", payload[q]);
                 if (nl++ == 15) {
-                    Serial.print("\r\n");
-                    Serial.printf("%02d) ", line_count++);
+                    Serial.printf_P("\n\r");
+                    Serial.printf_P("%02d) ", line_count++);
                     nl = 0;
                 }
             }
         }
         delete ihex;
-        Serial.println("\r\n================================================\n\r");
-        
+        Serial.printf_P("\n\r================================================\n\n\r");
+
         // Update ATtiny85 firmware ...
 
         // Detect the ATtiny85 application I2C address
@@ -144,18 +116,20 @@ void setup() {
         delete twi_bus;
         NbMicro *micro = nullptr;
         Timonel *timonel = nullptr;
-        Serial.printf("\n\rTWI address detected: %d", twi_address);
+        Serial.printf_P("\n\rTWI address detected: %d", twi_address);
+        // If the ATtiny85 is running a user application ...
         if (twi_address >= HIG_TML_ADDR) {
-            Serial.printf(" device running an user application\n\r");
+            Serial.printf_P(" device running an user application\n\r");
             micro = new NbMicro(twi_address, SDA, SCL);
             micro->TwiCmdXmit(RESETMCU, ACKRESET);
             delay(1000);
             delete micro;
-            Serial.printf("\n\rIs the application stopped?\n\r");
+            Serial.printf_P("\n\rIs the application stopped?\n\r");
         }
         delay(1000);
+        // If the ATtiny85 is running Timonel bootloader
         if ((twi_address < HIG_TML_ADDR) && (twi_address != 0)) {
-            Serial.printf(" device running Timonel bootloader\n\r");
+            Serial.printf_P(" device running Timonel bootloader\n\r");
             timonel = new Timonel(twi_address, SDA, SCL);
             timonel->GetStatus();
             uint8_t errors = timonel->UploadApplication(payload, payload_size);
@@ -163,153 +137,153 @@ void setup() {
                 USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!      \n\r");
                 delay(500);
                 timonel->RunApplication();
-                Serial.printf("\n\rIf we're lucky, application should be running by now ... \n\r");
-              
+                Serial.printf_P("\n\rIf we're lucky, application should be running by now ... \n\r");
+
+                // Save the latest firmware into the filesystem
+                WriteFile("/fw-current-ver.txt", fw_latest_rem);
+
+                // File file = SPIFFS.open("/fw-current-ver.txt", "w+");
+                // if (!file) {
+                //     Serial.printf_P("Error opening file for writing\n\r");
+                //     //return;
+                // }
+                // uint16 bytes_written = file.print(fw_latest_rem);
+                // if (bytes_written > 0) {
+                //     Serial.printf_P("ATtiny85 firmware version info updated (%d bytes saved) ...\n\r", bytes_written);
+                // } else {
+                //     Serial.printf_P("ATtin85 firmware version info update failed!\n\r");
+                // }
+                // file.close();
+
             } else {
                 USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b error! (%d)           \n\r", errors);
             }
-            delete timonel; 
+            delete timonel;
         }
-    
+
     } else {
-        // No firmware update needed
+        // ATtiny85 firmware up to date
+        Serial.printf_P("\n\rATtiny85 firmware update not needed ... \n\r");
+        TwiBus *twi_bus = new TwiBus(SDA, SCL);
+        uint8_t twi_address = twi_bus->ScanBus();
+        delete twi_bus;
+        Timonel *timonel = new Timonel(twi_address, SDA, SCL);
+        timonel->GetStatus();
+        timonel->RunApplication();
+        delete timonel;
     }
-
-    SPIFFS.end();
-
-    // ------------------ /// ************************* /// ---------------------///
-
-    //     if (SPIFFS.begin()) {
-    //         Serial.println("SPIFFS filesystem mounted with success");
-    //     } else {
-    //         Serial.println("Error mounting the SPIFFS file system");
-    //         return;
-    //     }
-
-    //     File file = SPIFFS.open("/fw-1.4.txt", "w+");
-
-    //     if (!file) {
-    //         Serial.println("Error opening file for writing");
-    //         return;
-    //     }
-
-    //     int bytesWritten = file.print("NICEBOTS FILE WRITING TEST ... SUCUNDUN");
-
-    //     if (bytesWritten > 0) {
-    //         Serial.println("File was written");
-    //         Serial.println(bytesWritten);
-
-    //     } else {
-    //         Serial.println("File write failed");
-    //     }
-
-    //     // **************************************************
-
-    //     String fileData = "";
-
-    //     file.seek(0, SeekSet);
-
-    //     if (file && file.size()) {
-    //         Serial.println("Dumping firmware file");
-
-    //         while (file.available()) {
-    //             fileData += char(file.read());
-    //         }
-    //         file.close();
-    //     }
-
-    //     Serial.println(fileData);
-
-    //     file.close();
-    // }
+    //SPIFFS.end();
 }
 
-// main loop
+uint16_t seconds = 60;
+
+/*   ___________________
+    |                   | 
+    |     Main loop     |
+    |___________________|
+*/
 void loop(void) {
-    // Empty main loop
+    Serial.printf_P("\n\r");
+    while (seconds) {
+        Serial.printf_P(".%d ", seconds);
+        delay(1000);
+        seconds--;
+    }
+    Serial.printf_P("\n\n\rRestarting, bye!\n\n\r");
+    delay(1000);
+    ESP.restart();
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 // Function clear screen
 void ClrScr(void) {
-    Serial.write(27);     // ESC command
-    Serial.print("[2J");  // clear screen command
-    Serial.write(27);     // ESC command
-    Serial.print("[H");   // cursor to home command
+    Serial.write(27);        // ESC command
+    Serial.printf_P("[2J");  // clear screen command
+    Serial.write(27);        // ESC command
+    Serial.printf_P("[H");   // cursor to home command
 }
-
-// // Function HttpsGet
-// String HttpsGet(char* host, String url, char[] fingerprint) {
-//     // Use WiFiClientSecure class to create TLS connection
-//     WiFiClientSecure client;
-//     Serial.print("Connecting to web site: ");
-//     Serial.println(host);
-
-//     Serial.printf("Using fingerprint: %s\n\r", fingerprint);
-//     client.setFingerprint(fingerprint);
-
-//     if (!client.connect(host, https_port)) {
-//         Serial.println("Connection failed");
-//         return;
-//     }
-
-//     // Read the latest firmware available to write to the slave device
-//     String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/latest-version.md";
-//     Serial.print("URL Request: ");
-//     Serial.println(url);
-
-//     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-//                  "Host: " + host + "\r\n" +
-//                  "User-Agent: TimonelTwiMOtaESP8266\r\n" +
-//                  "Connection: close\r\n\r\n");
-
-//     Serial.println("Request sent");
-//     while (client.connected()) {
-//         String line = client.readStringUntil('\n');
-//         if (line == "\r") {
-//             Serial.println("Headers received");
-//             break;
-//         }
-//     }
-
-//     String fw_version = client.readStringUntil('\n');
-// }
-
-///////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////
 
 // Function GetHttpDocument
 String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]) {
     // Use WiFiClientSecure class to create TLS connection
+    String http_string = "";
     WiFiClientSecure client;
-    //Serial.print("Connecting to web site: ");
-    //Serial.println(host);
-
-    //Serial.printf("Using fingerprint: %s\n\r", fingerprint);
+    Serial.printf_P("[%s] Connecting to web site: %s", __func__, host);
+    Serial.printf_P(" with fingerprint: %s\n\r", fingerprint);
     client.setFingerprint(fingerprint);
-
     if (!client.connect(host, port)) {
-        Serial.println("Connection failed");
-        //return;
+        Serial.printf_P("[%s] HTTP connection failed!\n\r", __func__);
+        // Connection error!
     }
-
-    //String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/latest-version.md";
-    //Serial.print("URL Request: ");
-    //Serial.println(url);
-
+    Serial.printf_P("[%s] URL Request: %s\n\r", __func__, url.c_str());
     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                  "Host: " + host + "\r\n" +
                  "User-Agent: TimonelTwiMOtaESP8266\r\n" +
                  "Connection: close\r\n\r\n");
-    //Serial.println("Request sent");
+    Serial.printf_P("[%s] Request sent ...\n\r", __func__);
     while (client.connected()) {
         String line = client.readStringUntil('\n');
         if (line == "\r") {
-            //Serial.println("Headers received");
+            Serial.printf_P("[%s] Headers received ...\n\r", __func__);
             break;
         }
     }
-    //String http_string = client.readStringUntil('\n');
-    String http_string = client.readStringUntil(terminator);
+    http_string = client.readStringUntil(terminator);
+    if (http_string != "") {
+        Serial.printf_P("[%s] HTTP data received ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] No HTTP data received!\n\r", __func__);
+    }
     return http_string;
+}
+
+// Function ReadFile
+String ReadFile(const char file_name[]) {
+    String file_data = "";
+    if (SPIFFS.begin()) {
+        Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] Error mounting the SPIFFS file system\n\r", __func__);
+        // Mount error!
+    }
+    File file = SPIFFS.open("/fw-current-ver.txt", "r");
+    Serial.printf_P("[%s] Reading file %s\n\r", __func__, file_name);
+    if (file && file.size()) {
+        while (file.available()) {
+            file_data += char(file.read());
+        }
+        file.close();
+        Serial.printf_P("%s\n\r", file_data.c_str());
+    } else {
+        Serial.printf_P("[%s] No data!\n\r", __func__);
+    }
+    return file_data;
+    SPIFFS.end();
+}
+
+// Function WriteFile
+uint8_t WriteFile(const char file_name[], const String file_data) {
+    uint8_t errors = 0;
+    if (SPIFFS.begin()) {
+        Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
+        // Mount error!
+    }
+    // Save file data into the filesystem
+    File file = SPIFFS.open("file_name", "w");
+    if (!file) {
+        Serial.printf_P("[%s] Error opening file for writing!", __func__);
+        // File opening error!
+    }
+    uint16 bytes_written = file.print(file_data);
+    if (bytes_written > 0) {
+        Serial.printf_P("[%s] File write successful (%d bytes saved) ...\n\r", __func__, bytes_written);
+    } else {
+        Serial.printf_P("[%s] File writing failed!", __func__);
+    }
+    SPIFFS.end();
 }
