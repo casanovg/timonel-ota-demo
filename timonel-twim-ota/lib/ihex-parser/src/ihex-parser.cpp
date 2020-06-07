@@ -34,22 +34,22 @@ bool HexParser::ParseIHexFormat(String serialized_file, uint8_t *payload) {
             // Serial.printf("\rix: %d line len: %d type: %d check: %d\n\r", ix, byte_count, record_type, checksum);
             if (record_type == 0) {
                 uint8_t record_check = 0;
-                Serial.printf("%02d) [%04X] ", line_count++, address);
+                // Serial.printf("%02d) [%04X] ", line_count++, address);
                 for (int data_pos = ix + 9; data_pos < (ix + 9 + (byte_count << 1)); data_pos += 2) {
                     uint8_t ihex_data = strtoul(serialized_file.substring(data_pos, data_pos + 2).c_str(), 0, 16);
                     record_check += ihex_data;
                     payload[payload_ix] = ihex_data;
-                    Serial.printf(".%02X", ihex_data);
+                    // Serial.printf(".%02X", ihex_data);
                     payload_ix++;
                 }
                 record_check = (~((byte_count + ((address >> 8) & 0xFF) + (address & 0xFF) + record_type + record_check) & 0xFF)) + 1;
                 if (record_check != checksum) {
-                    Serial.printf(" { %02X ERROR }", record_check);
+                    // Serial.printf(" { %02X ERROR }", record_check);
                     checksum_err = true;
                 } else {
-                    Serial.printf(" { %02X }", record_check);
+                    // Serial.printf(" { %02X }", record_check);
                 }
-                Serial.println("");
+                // Serial.println("");
             }
         }
     }
@@ -70,7 +70,7 @@ uint16_t HexParser::GetIHexSize(String serialized_file) {
             }
         }
     }
-    Serial.printf("\r\nFile length: %d\r\n", file_length);
-    Serial.printf("Data length: %d\r\n", file_data_length);
+    // Serial.printf("\r\nFile length: %d\r\n", file_length);
+    // Serial.printf("Data length: %d\r\n", file_data_length);
     return file_data_length;
 }

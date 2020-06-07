@@ -10,8 +10,10 @@
 #include <FS.h>
 #include <NbMicro.h>
 #include <TimonelTwiM.h>
+#include <TwiBus.h>
 #include <WiFiClientSecure.h>
 #include <ihex-parser.h>
+#include <nb-twi-cmd.h>
 
 #ifndef SSID
 #define SSID "Nicebots.com"
@@ -20,4 +22,7 @@
 // #define PASS "BB-8 C-3P0"
 #endif  // SSID
 
-#endif // _TIMONEL_TWIM_OTA_H_
+#define SDA 2  // I2C SDA pin - ESP8266 2 - ESP32 21
+#define SCL 0  // I2C SCL pin - ESP8266 0 - ESP32 22
+
+#endif  // _TIMONEL_TWIM_OTA_H_
