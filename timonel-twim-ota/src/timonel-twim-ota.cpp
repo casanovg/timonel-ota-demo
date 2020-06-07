@@ -102,12 +102,12 @@ void setup() {
         String fw_file_loc = "";
         file.seek(0, SeekSet);
         if (file && file.size()) {
-            Serial.println("\r\nDumping saved firmware file:");
+            //Serial.println("\r\nDumping saved firmware file:");
             while (file.available()) {
                 fw_file_loc += char(file.read());
             }
             file.close();
-            Serial.println(fw_file_loc);
+            //Serial.println(fw_file_loc);
         }
         //file.close();        
         // Parse the new firmware file
@@ -149,7 +149,9 @@ void setup() {
             Serial.printf(" device running an user application\n\r");
             micro = new NbMicro(twi_address, SDA, SCL);
             micro->TwiCmdXmit(RESETMCU, ACKRESET);
+            delay(1000);
             delete micro;
+            Serial.printf("\n\rIs the application stopped?\n\r");
         }
         delay(1000);
         if ((twi_address < HIG_TML_ADDR) && (twi_address != 0)) {
