@@ -77,8 +77,8 @@ void setup() {
     Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_rem.c_str());
     Serial.printf_P(".......................................................\n\r");
 
-    //if (fw_current_loc != fw_latest_rem) {
-    if (true) {
+    if (fw_current_loc != fw_latest_rem) {
+    //if (true) {
         // Update needed: get the latest firmware available for the ATtiny85 from internet
         terminator = '\0';
         url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_rem + ".hex";
@@ -137,6 +137,13 @@ void setup() {
             Serial.printf_P(" device running Timonel bootloader\n\r");
             timonel = new Timonel(twi_address, SDA, SCL);
             timonel->GetStatus();
+            // Delete current application
+            timonel->DeleteApplication();
+            delay(500);
+            timonel->GetStatus();
+            delay(125);
+            timonel->GetStatus();
+            delay(125);
             // Upload the new user application to the ATtiny85
             USE_SERIAL.printf_P("\n\rBootloader Cmd >>> Firmware upload to flash memory, \x1b[5mPLEASE WAIT\x1b[0m ...");
             uint8_t errors = timonel->UploadApplication(payload, payload_size);
