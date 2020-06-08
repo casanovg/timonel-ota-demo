@@ -72,23 +72,23 @@ void setup() {
         // Update needed: get the latest firmware available for the ATtiny85 from internet
         terminator = '\0';
         url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_ver + ".hex";
-        String fw_latest_dat = GetHttpDocument(url, terminator, host, port, fingerprint);
+        String fw_file_rem = GetHttpDocument(url, terminator, host, port, fingerprint);
 
         // Save the latest firmware into the filesystem
-        WriteFile("/fw-latest.hex", fw_latest_dat);
+        WriteFile("/fw-latest.hex", fw_file_rem);
 
         // Read the saved firmware file
-        fw_latest_dat = ReadFile("/fw-latest.hex");
+        String fw_file_loc = ReadFile("/fw-latest.hex");
 
         // Parse the new firmware file
         HexParser *ihex = new HexParser();
-        uint16_t payload_size = ihex->GetIHexSize(fw_latest_dat);
+        uint16_t payload_size = ihex->GetIHexSize(fw_file_loc);
         uint8_t payload[payload_size];
-        // uint8_t line_count = 0;
-        // uint8_t nl = 0;
+        uint8_t line_count = 0;
+        uint8_t nl = 0;
         //Serial.printf_P("\n\r================================================\n\r");
         Serial.printf_P("Firwmare dump:\n\r");
-        if (ihex->ParseIHexFormat(fw_latest_dat, payload)) {
+        if (ihex->ParseIHexFormat(fw_file_loc, payload)) {
             Serial.printf_P("\n\rPayload checksum error!\n\n\r");
             //Serial.printf_P("\r::::::::::::::::::::::::::::::::::::::::::::::::\n\r");
         } else {
@@ -118,10 +118,10 @@ void setup() {
             micro->TwiCmdXmit(RESETMCU, ACKRESET);
             delay(1000);
             delete micro;
-            Serial.printf_P("\n\rIs the application stopped? Resetting this device ...\n\r");
-            delay(2000);
-            ESP.restart();  // ***
+            Serial.printf_P("\n\rIs the application stopped?\n\r");
         }
+        delay(1000);
+        ESP.restart();  // ***
         // If the address is in the 08-35 range, the ATtiny85 is running Timonel bootloader ...
         if ((twi_address < HIG_TML_ADDR) && (twi_address != 0)) {
             Serial.printf_P(" device running Timonel bootloader\n\r");
