@@ -13,7 +13,7 @@
   4-The ESP8266 exits Timonel bootloader master and enters its normal
     operation loop, where it also makes frequent checks for new OTA updates.
   ----------------------------------------------------------------------------
-  2020-05-09 Gustavo Casanova
+  2020-06-06 Gustavo Casanova
   ----------------------------------------------------------------------------
 */
 
@@ -36,9 +36,9 @@ void setup() {
     Serial.begin(115200);
     ClrScr();
     Serial.printf_P("\n\r");
-    Serial.printf_P("......................................\n\r");
-    Serial.printf_P(".          TIMONEL-TWIM-OTA          .\n\r");
-    Serial.printf_P("......................................\n\r");
+    Serial.printf_P("..........................................\n\r");
+    Serial.printf_P(".          TIMONEL-TWIM-OTA 1.0          .\n\r");
+    Serial.printf_P("..........................................\n\r");
 
     // List all filesystem files
     //Format();
@@ -139,7 +139,7 @@ void setup() {
             uint8_t errors = timonel->UploadApplication(payload, payload_size);
             USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
             if (errors == 0) {
-                USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!                          \n\r");
+                USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!                          \n\r");
                 delay(500);
                 // Run the new user application
                 timonel->RunApplication();
@@ -175,14 +175,15 @@ uint16_t seconds = 60;
     |___________________|
 */
 void loop(void) {
-    Serial.printf_P("\n\r");
+    Serial.printf_P("\n\rI2C master main loop started ...\n\n\r");
+
     while (seconds) {
-        Serial.printf_P(".%d ", seconds);
+        Serial.printf_P("%d ", seconds);
         delay(1000);
         seconds--;
     }
-    Serial.printf_P("\n\n\rRestarting, bye!\n\n\r");
-    delay(1000);
+    Serial.printf_P("\n\n\rI2C master restarting to check for ATtiny85 firmware updates, bye!\n\n\r");
+    delay(3000);
     ESP.restart();
 }
 
