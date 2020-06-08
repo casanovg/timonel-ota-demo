@@ -178,7 +178,7 @@ void loop(void) {
     Serial.printf_P("\n\rI2C master main loop started ...\n\n\r");
 
     while (seconds) {
-        Serial.printf_P("%d ", seconds);
+        Serial.printf_P(".%d ", seconds);
         delay(1000);
         seconds--;
     }
