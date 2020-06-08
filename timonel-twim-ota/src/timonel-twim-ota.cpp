@@ -22,15 +22,6 @@
 // Use Firefox browser to get the web site certificate SHA1 fingerprint (case-insensitive)
 const char fingerprint[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78 2d 18 64 e0 b7";
 
-// Prototypes
-void ClrScr(void);
-uint8_t Format(void);
-uint8_t ListFiles(void);
-String ReadFile(const char file_name[]);
-uint8_t WriteFile(const char file_name[], const String file_data);
-uint8_t Rename(const char source_file_name[], const char destination_file_name[]);
-String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]);
-
 /*  ___________________
    |                   | 
    |    Setup block    |
@@ -52,11 +43,10 @@ void setup() {
     // List all filesystem files
     //Format();
     ListFiles();
-
+    // if (Exists("/fw-latest.hex") == false) {
     // Read the running ATtiny85 firmware version from the filesystem
-    String fw_current_loc = ReadFile("/fw-onboard.md");
-    Serial.printf_P("ATtiny85 firmware onboard (TBC): %s\n\r", fw_current_loc.c_str());
-
+    String fw_onboard_ver = ReadFile("/fw-onboard.md");
+    Serial.printf_P("ATtiny85 firmware onboard (TBC): %s\n\r", fw_onboard_ver.c_str());
     // Open WiFi connection to access the internet
     Serial.printf_P("Connecting to WiFi: ");
     Serial.printf_P(ssid);
@@ -68,20 +58,20 @@ void setup() {
     }
     Serial.printf_P("\n\r");
     Serial.printf_P("WiFi connected! IP address: %s\n\r", WiFi.localIP().toString().c_str());
-
     // Check the latest firmware version available for the slave device
     char terminator = '\n';
-    String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-latest.md";
-    String fw_latest_rem = GetHttpDocument(url, terminator, host, port, fingerprint);
-    Serial.printf_P(".......................................................\n\r");
-    Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_rem.c_str());
-    Serial.printf_P(".......................................................\n\r");
+    String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/fm-latest.md";
+    String fw_latest_ver = GetHttpDocument(url, terminator, host, port, fingerprint);
+    //Serial.printf_P(".......................................................\n\r");
+    Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_ver.c_str());
+    //Serial.printf_P(".......................................................\n\r");
+    //There is a pending ATtiny85 firmware update file in the filesystem ...
 
-    if (fw_current_loc != fw_latest_rem) {
-    //if (true) {
+    if (fw_onboard_ver != fw_latest_ver) {
+        //if (true) {
         // Update needed: get the latest firmware available for the ATtiny85 from internet
         terminator = '\0';
-        url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_rem + ".hex";
+        url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_ver + ".hex";
         String fw_file_rem = GetHttpDocument(url, terminator, host, port, fingerprint);
 
         // Save the latest firmware into the filesystem
@@ -96,25 +86,24 @@ void setup() {
         uint8_t payload[payload_size];
         uint8_t line_count = 0;
         uint8_t nl = 0;
-        Serial.printf_P("\n\r================================================\n\r");
+        //Serial.printf_P("\n\r================================================\n\r");
         Serial.printf_P("Firwmare dump:\n\r");
         if (ihex->ParseIHexFormat(fw_file_loc, payload)) {
             Serial.printf_P("\n\rPayload checksum error!\n\n\r");
             //Serial.printf_P("\r::::::::::::::::::::::::::::::::::::::::::::::::\n\r");
         } else {
-            Serial.printf_P("%02d) ", line_count++);
-            for (uint16_t q = 0; q < payload_size; q++) {
-                Serial.printf_P(".%02X", payload[q]);
-                if (nl++ == 15) {
-                    Serial.printf_P("\n\r");
-                    Serial.printf_P("%02d) ", line_count++);
-                    nl = 0;
-                }
-            }
+            // Serial.printf_P("%02d) ", line_count++);
+            // for (uint16_t q = 0; q < payload_size; q++) {
+            //     Serial.printf_P(".%02X", payload[q]);
+            //     if (nl++ == 15) {
+            //         Serial.printf_P("\n\r");
+            //         Serial.printf_P("%02d) ", line_count++);
+            //         nl = 0;
+            //     }
+            // }
         }
         delete ihex;
-        Serial.printf_P("\n\r================================================\n\n\r");
-
+        //Serial.printf_P("\n\r================================================\n\n\r");
         // Detect the ATtiny85 application TWI (I2C) address
         TwiBus *twi_bus = new TwiBus(SDA, SCL);
         uint8_t twi_address = twi_bus->ScanBus();
@@ -132,6 +121,7 @@ void setup() {
             Serial.printf_P("\n\rIs the application stopped?\n\r");
         }
         delay(1000);
+        ESP.restart();  // ***
         // If the address is in the 08-35 range, the ATtiny85 is running Timonel bootloader ...
         if ((twi_address < HIG_TML_ADDR) && (twi_address != 0)) {
             Serial.printf_P(" device running Timonel bootloader\n\r");
@@ -155,7 +145,7 @@ void setup() {
                 timonel->RunApplication();
                 Serial.printf_P("\n\rThe user application should be running by now ... \n\r");
                 // Save the latest firmware version info to the filesystem
-                WriteFile("/fw-onboard.md", fw_latest_rem);
+                WriteFile("/fw-onboard.md", fw_latest_ver);
                 // Move the firmware name from "latest" to "onboard"
                 Rename("/fw-latest.hex", "/fw-onboard.hex");
             } else {
@@ -163,7 +153,6 @@ void setup() {
             }
             delete timonel;
         }
-
     } else {
         // ATtiny85 firmware up to date
         Serial.printf_P("\n\rATtiny85 firmware update not needed ... \n\r");
@@ -354,4 +343,16 @@ uint8_t Rename(const char source_file_name[], const char destination_file_name[]
     }
     SPIFFS.end();
     return errors;
+}
+
+// Function Exists (If destination exists, overwrites it)
+bool Exists(const char file_name[]) {
+    if (SPIFFS.begin()) {
+        //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
+        // Mount error!
+    }
+    return SPIFFS.exists(file_name);
+    SPIFFS.end();
 }
