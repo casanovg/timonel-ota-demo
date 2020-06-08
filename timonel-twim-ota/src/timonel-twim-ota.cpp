@@ -60,7 +60,7 @@ void setup() {
     Serial.printf_P("WiFi connected! IP address: %s\n\r", WiFi.localIP().toString().c_str());
     // Check the latest firmware version available for the slave device
     char terminator = '\n';
-    String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/fm-latest.md";
+    String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/fw-latest.md";
     String fw_latest_ver = GetHttpDocument(url, terminator, host, port, fingerprint);
     //Serial.printf_P(".......................................................\n\r");
     Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_ver.c_str());
