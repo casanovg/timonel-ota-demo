@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2020-06-09T04:02:14.241Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36" etag="_YZpxE5SNLs538h0FxN3" version="13.1.14" type="github">
+<mxfile host="app.diagrams.net" modified="2020-06-09T04:03:43.740Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36" etag="hL87lK4Ge4Qj3C7Exegm" version="13.1.14" type="github">
   <diagram id="b7CmRXWE2GOlUavSTZUe" name="Page-1">
     <mxGraphModel dx="599" dy="310" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -98,7 +98,7 @@
         <mxCell id="aLQe0wNo5wLi3Sxk2y81-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=block;endFill=0;strokeColor=#000000;strokeWidth=1;" parent="1" source="aLQe0wNo5wLi3Sxk2y81-30" target="aLQe0wNo5wLi3Sxk2y81-32" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="aLQe0wNo5wLi3Sxk2y81-30" value="&lt;div&gt;&lt;span&gt;1.Initialize bootloader&lt;/span&gt;&lt;/div&gt;2.&lt;b&gt;Upload firmware&lt;/b&gt;&lt;br&gt;3.Start application" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" parent="1" vertex="1">
+        <mxCell id="aLQe0wNo5wLi3Sxk2y81-30" value="&lt;div&gt;&lt;span&gt;1.Initialize bootloader&lt;/span&gt;&lt;/div&gt;2.&lt;b&gt;Upload firmware&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" parent="1" vertex="1">
           <mxGeometry x="400" y="1456" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="aLQe0wNo5wLi3Sxk2y81-37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=block;endFill=0;strokeColor=#000000;strokeWidth=1;" parent="1" source="aLQe0wNo5wLi3Sxk2y81-32" target="aLQe0wNo5wLi3Sxk2y81-35" edge="1">
