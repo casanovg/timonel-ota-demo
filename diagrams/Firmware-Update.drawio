@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2020-06-09T04:03:43.740Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36" etag="hL87lK4Ge4Qj3C7Exegm" version="13.1.14" type="github">
+<mxfile host="app.diagrams.net" modified="2020-06-09T04:06:33.942Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36" etag="Mht_4FSNGU4jnFtxmF8j" version="13.1.14" type="github">
   <diagram id="b7CmRXWE2GOlUavSTZUe" name="Page-1">
     <mxGraphModel dx="599" dy="310" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -116,7 +116,7 @@
         <mxCell id="aLQe0wNo5wLi3Sxk2y81-35" value="Application firmware&lt;br&gt;updated?" style="rhombus;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="377.5" y="1656" width="165" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="aLQe0wNo5wLi3Sxk2y81-36" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=0;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="aLQe0wNo5wLi3Sxk2y81-35" target="aLQe0wNo5wLi3Sxk2y81-40" edge="1">
+        <mxCell id="aLQe0wNo5wLi3Sxk2y81-36" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=0;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="aLQe0wNo5wLi3Sxk2y81-35" target="VXSE_ZXA4Bv-Dsu-18KQ-1" edge="1">
           <mxGeometry x="-0.2632" y="15" relative="1" as="geometry">
             <mxPoint x="560" y="1756" as="sourcePoint" />
             <mxPoint x="1" as="offset" />
@@ -130,7 +130,7 @@
           <mxGeometry x="590" y="1341" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="aLQe0wNo5wLi3Sxk2y81-40" value="End&lt;br&gt;(Update Error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
-          <mxGeometry x="590" y="1676" width="120" height="50" as="geometry" />
+          <mxGeometry x="590" y="1770" width="120" height="50" as="geometry" />
         </mxCell>
         <mxCell id="aLQe0wNo5wLi3Sxk2y81-41" value="End update&lt;br&gt;process" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
           <mxGeometry x="400" y="1888" width="120" height="50" as="geometry" />
@@ -200,6 +200,15 @@
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="470" y="700" as="sourcePoint" />
             <mxPoint x="470" y="750" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="VXSE_ZXA4Bv-Dsu-18KQ-1" value="Increment retries counter and save file" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1671" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="VXSE_ZXA4Bv-Dsu-18KQ-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;endArrow=block;endFill=0;strokeColor=#000000;strokeWidth=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="VXSE_ZXA4Bv-Dsu-18KQ-1" target="aLQe0wNo5wLi3Sxk2y81-40">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="649.66" y="1670" as="sourcePoint" />
+            <mxPoint x="610" y="1683" as="targetPoint" />
           </mxGeometry>
         </mxCell>
       </root>
