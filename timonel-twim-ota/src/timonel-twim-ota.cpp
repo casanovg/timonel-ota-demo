@@ -43,13 +43,12 @@ void setup() {
     // List all filesystem files
     //Format();
     ListFiles();
-    // if (Exists("/fw-latest.hex") == false) {
+    //if (Exists("/fw-latest.hex") == false) {
     // Read the running ATtiny85 firmware version from the filesystem
     String fw_onboard_ver = ReadFile("/fw-onboard.md");
     Serial.printf_P("ATtiny85 firmware onboard (TBC): %s\n\r", fw_onboard_ver.c_str());
     // Open WiFi connection to access the internet
-    Serial.printf_P("Connecting to WiFi: ");
-    Serial.printf_P(ssid);
+    //Serial.printf_P("Connecting to WiFi: %s\n\r", ssid);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
@@ -84,10 +83,10 @@ void setup() {
         HexParser *ihex = new HexParser();
         uint16_t payload_size = ihex->GetIHexSize(fw_file_loc);
         uint8_t payload[payload_size];
-        uint8_t line_count = 0;
-        uint8_t nl = 0;
+        // uint8_t line_count = 0;
+        // uint8_t nl = 0;
         //Serial.printf_P("\n\r================================================\n\r");
-        Serial.printf_P("Firwmare dump:\n\r");
+        //Serial.printf_P("Firwmare dump:\n\r");
         if (ihex->ParseIHexFormat(fw_file_loc, payload)) {
             Serial.printf_P("\n\rPayload checksum error!\n\n\r");
             //Serial.printf_P("\r::::::::::::::::::::::::::::::::::::::::::::::::\n\r");
@@ -119,9 +118,9 @@ void setup() {
             delay(1000);
             delete micro;
             Serial.printf_P("\n\rIs the application stopped?\n\r");
+            delay(3000);
+            ESP.restart();  // ***
         }
-        delay(1000);
-        ESP.restart();  // ***
         // If the address is in the 08-35 range, the ATtiny85 is running Timonel bootloader ...
         if ((twi_address < HIG_TML_ADDR) && (twi_address != 0)) {
             Serial.printf_P(" device running Timonel bootloader\n\r");
@@ -164,7 +163,6 @@ void setup() {
         timonel->RunApplication();
         delete timonel;
     }
-    //SPIFFS.end();
 }
 
 uint16_t seconds = 60;

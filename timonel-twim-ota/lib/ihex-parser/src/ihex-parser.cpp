@@ -70,7 +70,7 @@ uint16_t HexParser::GetIHexSize(String serialized_file) {
             }
         }
     }
-    Serial.printf_P("\r\n[%s] File length: %d\n\r", __func__, file_length);
-    Serial.printf_P("[%s] Payload size: %d\n\r", __func__, data_size);
+    //Serial.printf_P("\r\n[%s] File length: %d\n\r", __func__, file_length);
+    //Serial.printf_P("[%s] Payload size: %d\n\r", __func__, data_size);
     return data_size;
 }
