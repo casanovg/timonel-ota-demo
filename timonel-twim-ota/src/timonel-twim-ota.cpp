@@ -19,8 +19,17 @@
 
 #include "timonel-twim-ota.h"
 
+#define FW_WEB_URL "/casanovg/timonel-ota-demo/master/fw-attiny85"
+
+// ATtiny85 MAX update attempts number
+const uint8_t MAX_UPDATE_TRIES = 3;
 // Use Firefox browser to get the web site certificate SHA1 fingerprint (case-insensitive)
-const char fingerprint[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78 2d 18 64 e0 b7";
+const char FINGERPRINT[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78 2d 18 64 e0 b7";
+// File name constants
+const char FW_ONBOARD_VER[] PROGMEM = "fw-onboard.md";
+const char FW_LATEST_LOC[] PROGMEM = "/fw-latest.hex";
+const char FW_LATEST_VER[] PROGMEM = FW_WEB_URL "/fw-latest.md";
+const char UPDATE_TRIES[] PROGMEM = "/update_tries.md";
 
 /*  ___________________
    |                   | 
@@ -28,9 +37,7 @@ const char fingerprint[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78
    |___________________|
 */
 void setup(void) {
-
-CheckForUpdates():
-
+    CheckForUpdates();
 }
 
 /*   ___________________
@@ -39,21 +46,25 @@ CheckForUpdates():
     |___________________|
 */
 void loop(void) {
-
 }
 
- // #############################################################################################
- // #############################################################################################
- // #############################################################################################
- // #############################################################################################
- // #############################################################################################
+// #############################################################################################
+// #############################################################################################
+// #############################################################################################
+// #############################################################################################
+// #############################################################################################
 
 void CheckForUpdates(void) {
+    if (ReadFile(UPDATE_TRIES).charAt(0) != '\0') {
+        int a = (int)ReadFile(UPDATE_TRIES).charAt(0);
+    }
     
-
+    
+    //uint8_t max_update_tries = (uint8_t)ReadFile(MAX_UPDATE_TRIES).c_str();
+    if (Exists("/fw-latest.hex") == false) {
+        // Check that the maximum number of ATtiny85 update attempts has not been reached
+    }
 }
-
-
 
 #if POPEYE
 
@@ -202,8 +213,6 @@ void setup() {
 
 uint16_t seconds = 60;
 
-
-
 /*   ___________________
     |                   | 
     |     Main loop     |
@@ -222,7 +231,7 @@ void loop(void) {
     ESP.restart();
 }
 
-#endif // POPEYE
+#endif  // POPEYE
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////

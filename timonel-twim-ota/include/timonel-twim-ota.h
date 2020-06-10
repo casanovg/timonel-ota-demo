@@ -27,6 +27,7 @@
 
 // Prototypes
 void ClrScr(void);
+void CheckForUpdates(void);
 uint8_t Format(void);
 uint8_t ListFiles(void);
 bool Exists(const char file_name[]);
