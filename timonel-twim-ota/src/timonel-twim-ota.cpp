@@ -55,14 +55,48 @@ void loop(void) {
 // #############################################################################################
 
 void CheckForUpdates(void) {
+    int update_tries = 0;
+    String fw_latest_dat = "";
+    const char ssid[] = SSID;
+    const char password[] = PASS;
+    const char host[] = "raw.githubusercontent.com";
+    const int port = 443;    
+    // Reading update attempts recording file
     if (ReadFile(UPDATE_TRIES).charAt(0) != '\0') {
-        int a = (int)ReadFile(UPDATE_TRIES).charAt(0);
+        int update_tries = (int)ReadFile(UPDATE_TRIES).charAt(0);
     }
-    
-    
-    //uint8_t max_update_tries = (uint8_t)ReadFile(MAX_UPDATE_TRIES).c_str();
-    if (Exists("/fw-latest.hex") == false) {
-        // Check that the maximum number of ATtiny85 update attempts has not been reached
+    if (update_tries < MAX_UPDATE_TRIES) {
+        // Update retries NOT exceeded, starting update routine
+        Serial.printf_P("[%s] Update attempts: %d or %d, starting the update routine ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
+        if (Exists(FW_LATEST_LOC)) {
+            // New firmware file already present in FS, probably due to a failed update
+            Serial.printf_P("[%s] New firmware file already present in FS, probably due to a failed update ...\n\r", __func__);
+            fw_latest_dat = ReadFile(FW_LATEST_LOC);
+        } else {
+            // New firmware file NOT present in FS, accessing the internet to check for updates
+            String fw_onboard_ver = ReadFile(FW_ONBOARD_VER);
+            Serial.printf_P("[%s] ATtiny85 current firmware onboard: %s\n\r", __func__, fw_onboard_ver.c_str());
+
+            WiFi.mode(WIFI_STA);
+            WiFi.begin(ssid, password);
+            while (WiFi.status() != WL_CONNECTED) {
+                delay(1000);
+                Serial.printf_P(".");
+            }
+            Serial.printf_P("\n\r");
+            Serial.printf_P("WiFi connected! IP address: %s\n\r", WiFi.localIP().toString().c_str());
+            // Check the latest firmware version available for the slave device
+            char terminator = '\n';
+            //String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/fw-latest.md";
+            String fw_latest_ver = GetHttpDocument(FW_LATEST_VER, terminator, host, port, FINGERPRINT);
+            //Serial.printf_P(".......................................................\n\r");
+            Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_ver.c_str());
+
+
+        }
+    } else {
+        // Update retries exceeded, running the application and exiting this update routine
+        // --------------------------------------------------------------------------------
     }
 }
 
