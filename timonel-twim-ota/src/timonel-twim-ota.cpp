@@ -20,16 +20,22 @@
 #include "timonel-twim-ota.h"
 
 #define FW_WEB_URL "/casanovg/timonel-ota-demo/master/fw-attiny85"
+#define FW_ONBOARD_VER "/fw-onboard.md"
+#define FW_ONBOARD_LOC "/fw-onboard.hex"
+#define FW_LATEST_LOC "/fw-latest.hex"
+#define FW_LATEST_VER "/casanovg/timonel-ota-demo/master/fw-attiny85/fw-latest.md"
+#define UPDATE_TRIES "/update_tries.md"
 
 // ATtiny85 MAX update attempts number
 const uint8_t MAX_UPDATE_TRIES = 3;
 // Use Firefox browser to get the web site certificate SHA1 fingerprint (case-insensitive)
 const char FINGERPRINT[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78 2d 18 64 e0 b7";
 // File name constants
-const char FW_ONBOARD_VER[] PROGMEM = "fw-onboard.md";
-const char FW_LATEST_LOC[] PROGMEM = "/fw-latest.hex";
-const char FW_LATEST_VER[] PROGMEM = FW_WEB_URL "/fw-latest.md";
-const char UPDATE_TRIES[] PROGMEM = "/update_tries.md";
+// const char FW_ONBOARD_VER[] PROGMEM = "/fw-onboard.md";
+// const char FW_ONBOARD_LOC[] PROGMEM = "/fw-onboard.hex";
+// const char FW_LATEST_LOC[] PROGMEM = "/fw-latest.hex";
+// const char FW_LATEST_VER[] PROGMEM = FW_WEB_URL "/fw-latest.md";
+// const char UPDATE_TRIES[] PROGMEM = "/update_tries.md";
 
 /*  ___________________
    |                   | 
@@ -37,6 +43,14 @@ const char UPDATE_TRIES[] PROGMEM = "/update_tries.md";
    |___________________|
 */
 void setup(void) {
+    Serial.begin(115200);
+    ClrScr();
+    delay(3000);
+    Serial.printf_P("\n\r");
+    Serial.printf_P("..........................................\n\r");
+    Serial.printf_P(".          TIMONEL-TWIM-OTA 1.0          .\n\r");
+    Serial.printf_P("..........................................\n\r");
+
     CheckForUpdates();
 }
 
@@ -46,6 +60,17 @@ void setup(void) {
     |___________________|
 */
 void loop(void) {
+    uint16_t seconds = 60;
+    Serial.printf_P("\n\rI2C master main loop started ...\n\n\r");
+
+    while (seconds) {
+        Serial.printf_P(".%d ", seconds);
+        delay(1000);
+        seconds--;
+    }
+    Serial.printf_P("\n\n\rI2C master restarting to check for ATtiny85 firmware updates, bye!\n\n\r");
+    delay(3000);
+    ESP.restart();
 }
 
 // #############################################################################################
@@ -54,65 +79,205 @@ void loop(void) {
 // #############################################################################################
 // #############################################################################################
 
+// Function CheckForUpdates
 void CheckForUpdates(void) {
-    int update_tries = 0;
+    uint8_t update_tries = 0;
     String fw_latest_dat = "";
     const char ssid[] = SSID;
     const char password[] = PASS;
     const char host[] = "raw.githubusercontent.com";
     const int port = 443;
+
+    // " <<< Wifi connection "
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.printf_P(".");
+    }
+    Serial.printf_P("\n\r");
+    Serial.printf_P("[%s] WiFi connected! IP address: %s\n\r", __func__, WiFi.localIP().toString().c_str());
+    // " WiFi connection >>> "    
+
+    ListFiles();
+
     // Reading update attempts recording file
     if (ReadFile(UPDATE_TRIES).charAt(0) != '\0') {
-        int update_tries = (int)ReadFile(UPDATE_TRIES).charAt(0);
+        String retry_str = ReadFile(UPDATE_TRIES);
+        update_tries = (uint8_t)retry_str.toInt();
+        Serial.printf_P("[%s] Retry file str: %d times (String: %s) ...\n\r", __func__, update_tries, retry_str.c_str());
+        update_tries = (uint8_t)ReadFile(UPDATE_TRIES).charAt(0);
     }
     if (update_tries < MAX_UPDATE_TRIES) {
         // ..................................................
-        // (1) Update retries NOT exceeded, starting update routine
+        // (1)> Update retries NOT exceeded, starting update routine
         // ..................................................
-        Serial.printf_P("[%s] Update attempts: %d or %d, starting the update routine ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
+        Serial.printf_P("[%s] Update attempts: %d of %d, starting the update routine ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
         if (Exists(FW_LATEST_LOC)) {
             // ..................................................
-            // (?2) New firmware file already present in FS, probably due to a failed update
+            // (?2)> New firmware file already present in FS, probably due to a failed update
             // ..................................................
             Serial.printf_P("[%s] New firmware file already present in FS, probably due to a failed update ...\n\r", __func__);
             fw_latest_dat = ReadFile(FW_LATEST_LOC);
         } else {
             // ..................................................
-            // (:2) New firmware file NOT present in FS, accessing the internet to check for updates
+            // (:2)> New firmware file NOT present in FS, accessing the internet to check for updates
             // ..................................................
             Serial.printf_P("[%s] New firmware file NOT present in FS, accessing the internet to check for updates ...\n\r", __func__);
             // Check local firmware version, currently running on the slave device
             String fw_onboard_ver = ReadFile(FW_ONBOARD_VER);
             Serial.printf_P("[%s] ATtiny85 current firmware onboard: %s\n\r", __func__, fw_onboard_ver.c_str());
-            // " <<< Wifi connection "
-            WiFi.mode(WIFI_STA);
-            WiFi.begin(ssid, password);
-            while (WiFi.status() != WL_CONNECTED) {
-                delay(1000);
-                Serial.printf_P(".");
-            }
-            Serial.printf_P("\n\r");
-            Serial.printf_P("WiFi connected! IP address: %s\n\r", WiFi.localIP().toString().c_str());
-            // " WiFi connection >>> "
+            
+            // " <<< Wifi connection >>> "
+
             // Check the latest firmware version available for the slave device through WiFi
             char terminator = '\n';
             String fw_latest_ver = GetHttpDocument(FW_LATEST_VER, terminator, host, port, FINGERPRINT);
             //Serial.printf_P(".......................................................\n\r");
-            Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_ver.c_str());
+            Serial.printf_P("[%s] Latest firmware version available for ATtiny85: %s\n\r", __func__, fw_latest_ver.c_str());
             if (fw_onboard_ver = fw_latest_ver) {
-                // (?3) Update NOT needed, run the application and exit this update routine
-                // ##### S #####
+                // ..................................................
+                // (?3)> Update NOT needed, run the application and exit this update routine
+                // ..................................................
+                // ##### (S) #####
+                StartApplication();
             } else {
-                // (:3) There is a new firmware version available, download it through WiFi
-                
+                // ..................................................
+                // (:3)> There is a new firmware version available, download it through WiFi
+                // ..................................................
+                terminator = '\0';
+                String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_ver + ".hex";
+                String fw_latest_dat = GetHttpDocument(url, terminator, host, port, FINGERPRINT);
+            }  // (/3)>
+            WiFi.disconnect();
+        }      // (/2)>
+        uint16_t payload_size = GetIHexSize(fw_latest_dat);
+        uint8_t payload[payload_size];
+        if (ParseIHexFormat(fw_latest_dat, payload)) {
+            // ..................................................
+            // (?4)> There were errors parsing the downloaded Intel Hex firmware, resetting master
+            // ..................................................
+            Serial.printf_P("Intel Hex file checksum error!\n\r");
+            // ##### (R) #####
+            RetryRestart(UPDATE_TRIES, update_tries);
+        } else {
+            // ..................................................
+            // (:4)> Intel Hex firmware parsed correctly, binary payload ready to flash device
+            // ..................................................
+            WriteFile(FW_LATEST_LOC, fw_latest_dat);  // Saving the new firmware file to FS
+            // uint8_t line_count = 0;
+            // uint8_t char_count = 0;
+            // Serial.printf_P("%02d) ", line_count++);
+            // for (uint16_t i = 0; i < payload_size; i++) {
+            //     Serial.printf_P(".%02X", payload[i]);
+            //     if (char_count++ == 15) {
+            //         Serial.printf_P("\n\r");
+            //         Serial.printf_P("%02d) ", line_count++);
+            //         char_count = 0;
+            //     }
+            // }
+        }  // (/4)>
+        uint8_t twi_address = 0;
+        TwiBus twi_bus(SDA, SCL);
+        twi_address = twi_bus.ScanBus();
+        NbMicro *p_micro = nullptr;
+        Timonel *p_timonel = nullptr;
+        Serial.printf_P("TWI address detected: %d", twi_address);
+        if (twi_address < LOW_TML_ADDR) {
+            // ..................................................
+            // (?5)> TWI device NOT detected in the bus, resetting master
+            // ..................................................
+            Serial.printf_P(", invalid address or device not present!\n\r");
+            // ##### (R) #####
+            RetryRestart(UPDATE_TRIES, update_tries);
+        } else {
+            // ..................................................
+            // (:5)> TWI device detected in the bus, creating an object for its address type
+            // ..................................................
+            if (twi_address <= HIG_TML_ADDR) {
+                // ..................................................
+                // (?6)> The address is in the 08-35 range, device running Timonel bootloader ...
+                // ..................................................
+                Serial.printf_P(", device running Timonel bootloader ...\n\r");
+                // Initialize Timonel object
+                p_timonel = new Timonel(twi_address, SDA, SCL);
+                p_timonel->GetStatus();
+                delay(125);
+                // Delete ATtiny85 onboard application
+                p_timonel->DeleteApplication();
+                delay(500);
+                p_timonel->GetStatus();
+                delay(125);
+                // Upload the new user application to the ATtiny85
+                USE_SERIAL.printf_P("[%s] Timonel bootloader uploading firmware to flash memory, \x1b[5mPLEASE WAIT\x1b[0m ...", __func__);
+                uint8_t errors = p_timonel->UploadApplication(payload, payload_size);
+                USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+                if (errors == 0) {
+                    // ..................................................
+                    // (?7)> Application firmware loaded on the device
+                    // ..................................................
+                    USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!                          \n\r");
+                    delay(500);
+                    // Run the new user application
+                    p_timonel->RunApplication();
+                    Serial.printf_P("[%s] The user application should be running by now ... \n\r, __func__");
+                    delete p_timonel;
+                    // Move the firmware name from "latest" to "onboard"
+                    Rename(FW_LATEST_LOC, FW_ONBOARD_LOC);
+                } else {
+                    // ..................................................
+                    // (:7)> There were errors uploading the new firmware
+                    // ..................................................
+                    USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b error! (%d)                          \n\r", errors);
+                    // ##### (R) #####
+                    RetryRestart(UPDATE_TRIES, update_tries);
+                }  // (/7)>
+                // Remove Timonel object
+                //delete p_timonel;
+            } else {
+                // ..................................................
+                // (:6)> The address is above bootloader range, running an user application ...
+                // ..................................................
+                Serial.printf_P(", device running an user application ...\n\r");
+                p_micro = new NbMicro(twi_address, SDA, SCL);
+                p_micro->TwiCmdXmit(RESETMCU, ACKRESET);
+                delay(250);
+                delete p_micro;
+                Serial.printf_P("[%s] The user application should be stopped by now, restarting master to begin the update ...\n\r", __func__);
+                delay(2000);
+                ESP.restart();
+            }  // (/6)>
 
-            } // (/3)
-        } // (/2)
+        }  // (/5)>
     } else {
         // ..................................................
-        // (1) Update retries exceeded, running the application and exiting this update routine
+        // (1)> Update retries exceeded, running the application and exiting this update routine
         // ..................................................
-    } // (/1)
+        // ##### (S) #####
+        Serial.printf_P("[%s] Retry %d of %d attempted, formating FS, running the application and exiting ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
+        Format();
+        StartApplication();
+    }  // (/1)>
+}
+
+// Function StartApplication
+void StartApplication(void) {
+    uint8_t twi_address = 0;
+    TwiBus twi_bus(SDA, SCL);
+    twi_address = twi_bus.ScanBus();
+    Serial.printf_P("[%s] Trying to start the user application ...\n\r", __func__);
+    if ((twi_address >= LOW_TML_ADDR) && (twi_address <= HIG_TML_ADDR)) {
+        Timonel timonel(twi_address, SDA, SCL);
+        timonel.RunApplication();
+    }
+}
+
+// Function RetryRestart
+void RetryRestart(const char file_name[], uint8_t update_tries) {
+    update_tries++;
+    Serial.printf_P("[%s] Saving [%d] to retry counter and resetting ...\n\r", __func__, update_tries);
+    WriteFile(file_name, (String)update_tries);
+    //ESP.restart();
 }
 
 #if POPEYE
@@ -346,7 +511,7 @@ String ReadFile(const char file_name[]) {
         file.close();
         //Serial.printf_P("%s\n\r", file_data.c_str());
     } else {
-        Serial.printf_P("[%s] Warning: File empty or unavailable!\n\r", __func__);
+        Serial.printf_P("[%s] Warning: File \"%s\" empty or unavailable!\n\r", __func__, file_name);
     }
     return file_data;
     SPIFFS.end();
@@ -365,7 +530,7 @@ uint8_t WriteFile(const char file_name[], const String file_data) {
     // Save file data into the filesystem
     File file = SPIFFS.open(file_name, "w");
     if (!file) {
-        Serial.printf_P("[%s] Error opening file for writing!", __func__);
+        Serial.printf_P("[%s] Error opening file for writing!\n\r", __func__);
         errors += 2;
         // File opening error!
     }
@@ -374,7 +539,7 @@ uint8_t WriteFile(const char file_name[], const String file_data) {
     if (bytes_written > 0) {
         //Serial.printf_P("[%s] File write successful (%d bytes saved) ...\n\r", __func__, bytes_written);
     } else {
-        Serial.printf_P("[%s] File writing failed!", __func__);
+        Serial.printf_P("[%s] \"%s\" file writing failed!\n\r", __func__, file_name);
         errors += 3;
         // File writing error!
     }
@@ -435,7 +600,7 @@ uint8_t Rename(const char source_file_name[], const char destination_file_name[]
     if (errors) {
         //Serial.printf_P("[%s] File renamed successfully ...\n\r", __func__);
     } else {
-        Serial.printf_P("[%s] File renaming failed!\n\r", __func__);
+        Serial.printf_P("[%s] File renaming failed! (%s to %s)\n\r", __func__, source_file_name, destination_file_name);
     }
     SPIFFS.end();
     return errors;
@@ -451,4 +616,62 @@ bool Exists(const char file_name[]) {
     }
     return SPIFFS.exists(file_name);
     SPIFFS.end();
+}
+
+// Function ParseIHexFormat
+bool ParseIHexFormat(String serialized_file, uint8_t *payload) {
+    uint16_t file_len = serialized_file.length();
+    uint16_t payload_ix = 0;
+    uint8_t line_count = 0;
+    bool checksum_err = false;
+    // Loops through the serialized file
+    for (int ix = 0; ix < file_len; ix++) {
+        // If a record start is detected
+        if (serialized_file.charAt(ix) == IHEX_START_CODE) {
+            uint8_t byte_count = strtoul(serialized_file.substring(ix + 1, ix + 3).c_str(), 0, 16);
+            uint16_t address = strtoul(serialized_file.substring(ix + 3, ix + 7).c_str(), 0, 16);
+            uint8_t record_type = strtoul(serialized_file.substring(ix + 7, ix + 9).c_str(), 0, 16);
+            uint8_t checksum = strtoul(serialized_file.substring(ix + 9 + (byte_count << 1), ix + 11 + (byte_count << 1)).c_str(), 0, 16);
+            // Serial.printf_P("\rix: %d line len: %d type: %d check: %d\n\r", ix, byte_count, record_type, checksum);
+            if (record_type == 0) {
+                uint8_t record_check = 0;
+                // Serial.printf_P("%02d) [%04X] ", line_count++, address);
+                for (int data_pos = ix + 9; data_pos < (ix + 9 + (byte_count << 1)); data_pos += 2) {
+                    uint8_t ihex_data = strtoul(serialized_file.substring(data_pos, data_pos + 2).c_str(), 0, 16);
+                    record_check += ihex_data;
+                    payload[payload_ix] = ihex_data;
+                    // Serial.printf_P(".%02X", ihex_data);
+                    payload_ix++;
+                }
+                record_check = (~((byte_count + ((address >> 8) & 0xFF) + (address & 0xFF) + record_type + record_check) & 0xFF)) + 1;
+                if (record_check != checksum) {
+                    // Serial.printf_P(" { %02X ERROR }", record_check);
+                    checksum_err = true;
+                } else {
+                    // Serial.printf_P(" { %02X }", record_check);
+                }
+                // Serial.printf_P("\n\r");
+            }
+        }
+    }
+    return checksum_err;
+}
+
+// Function GetIHexSize
+uint16_t GetIHexSize(String serialized_file) {
+    uint16_t file_length = serialized_file.length();
+    uint16_t data_size = 0;
+    for (int ix = 0; ix < file_length; ix++) {
+        if (serialized_file.charAt(ix) == ':') {
+            uint8_t record_type = strtoul(serialized_file.substring(ix + 7, ix + 9).c_str(), 0, 16);
+            uint8_t byte_count = strtoul(serialized_file.substring(ix + 1, ix + 3).c_str(), 0, 16);
+            //uint8_t checksum = strtoul(serialized_file.substring(ix + 9 + (byte_count << 1), ix + 11 + (byte_count << 1)).c_str(), 0, 16);
+            if (record_type == 0) {
+                data_size += byte_count;
+            }
+        }
+    }
+    //Serial.printf_P("\r\n[%s] File length: %d\n\r", __func__, file_length);
+    //Serial.printf_P("[%s] Payload size: %d\n\r", __func__, data_size);
+    return data_size;
 }
