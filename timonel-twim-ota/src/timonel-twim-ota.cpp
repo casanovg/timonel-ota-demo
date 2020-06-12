@@ -83,7 +83,8 @@ void loop(void) {
 void CheckForUpdates(void) {
     uint8_t update_tries = 0;
     String fw_latest_dat = "";
-    String fw_onboard_ver = "0";
+    String fw_latest_ver = "";
+    String fw_onboard_ver = "";
     const char ssid[] = SSID;
     const char password[] = PASS;
     const char host[] = "raw.githubusercontent.com";
@@ -98,12 +99,12 @@ void CheckForUpdates(void) {
         // ..................................................
         // (1)> Update retries NOT exceeded, starting update routine
         // ..................................................
-        Serial.printf_P("[%s] Update attempts: %d of %d, starting the update routine ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
+        Serial.printf_P("[%s] Update attempts [%d of %d], starting the update routine ...\n\r", __func__, update_tries + 1, MAX_UPDATE_TRIES);
         if (Exists(FW_LATEST_LOC)) {
             // ..................................................
             // (?2)> New firmware file already present in FS, probably due to a failed update
             // ..................................................
-            Serial.printf_P("[%s] New firmware file already present in FS, wev download not necessary ...\n\r", __func__);
+            Serial.printf_P("[%s] New firmware file already present in FS, web download not necessary ...\n\r", __func__);
             fw_latest_dat = ReadFile(FW_LATEST_LOC);
         } else {
             // ..................................................
@@ -127,7 +128,7 @@ void CheckForUpdates(void) {
 
             // Check the latest firmware version available for the slave device through WiFi
             char terminator = '\n';
-            String fw_latest_ver = GetHttpDocument(FW_LATEST_VER, terminator, host, port, FINGERPRINT);
+            fw_latest_ver = GetHttpDocument(FW_LATEST_VER, terminator, host, port, FINGERPRINT);
             //Serial.printf_P(".......................................................\n\r");
             Serial.printf_P("[%s] Latest firmware version available for ATtiny85: %s\n\r", __func__, fw_latest_ver.c_str());
             if (fw_onboard_ver == fw_latest_ver) {
@@ -223,8 +224,9 @@ void CheckForUpdates(void) {
                     Serial.printf_P("[%s] The user application should be running by now ... \n\r", __func__);
                     // Move the firmware name from "latest" to "onboard"
                     Rename(FW_LATEST_LOC, FW_ONBOARD_LOC);
+                    delay(250);
                     // Save current onboard firmware version
-                    WriteFile(FW_ONBOARD_VER, fw_onboard_ver);
+                    WriteFile(FW_ONBOARD_VER, fw_latest_ver);
                 } else {
                     // ..................................................
                     // (:7)> There were errors uploading the new firmware
@@ -255,7 +257,7 @@ void CheckForUpdates(void) {
         // (1)> Update retries exceeded, running the application and exiting this update routine
         // ..................................................
         // ##### (S) #####
-        Serial.printf_P("[%s] Retry %d of %d attempted, formating FS, running the application and exiting ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
+        Serial.printf_P("[%s] Retry [%d of %d] attempted, formating FS, running the application and exiting ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
         Format();
         StartApplication();
     }  // (/1)>
