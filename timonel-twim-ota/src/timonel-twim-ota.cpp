@@ -83,30 +83,16 @@ void loop(void) {
 void CheckForUpdates(void) {
     uint8_t update_tries = 0;
     String fw_latest_dat = "";
+    String fw_onboard_ver = "0";
     const char ssid[] = SSID;
     const char password[] = PASS;
     const char host[] = "raw.githubusercontent.com";
     const int port = 443;
-
-    // " <<< Wifi connection "
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-        Serial.printf_P(".");
-    }
-    Serial.printf_P("\n\r");
-    Serial.printf_P("[%s] WiFi connected! IP address: %s\n\r", __func__, WiFi.localIP().toString().c_str());
-    // " WiFi connection >>> "    
-
     ListFiles();
-
     // Reading update attempts recording file
     if (ReadFile(UPDATE_TRIES).charAt(0) != '\0') {
-        String retry_str = ReadFile(UPDATE_TRIES);
-        update_tries = (uint8_t)retry_str.toInt();
-        Serial.printf_P("[%s] Retry file str: %d times (String: %s) ...\n\r", __func__, update_tries, retry_str.c_str());
-        update_tries = (uint8_t)ReadFile(UPDATE_TRIES).charAt(0);
+        update_tries = atoi(ReadFile(UPDATE_TRIES).c_str());
+        // Serial.printf_P("[%s] Retry file str: %d times ...\n\r", __func__, update_tries);
     }
     if (update_tries < MAX_UPDATE_TRIES) {
         // ..................................................
@@ -117,40 +103,51 @@ void CheckForUpdates(void) {
             // ..................................................
             // (?2)> New firmware file already present in FS, probably due to a failed update
             // ..................................................
-            Serial.printf_P("[%s] New firmware file already present in FS, probably due to a failed update ...\n\r", __func__);
+            Serial.printf_P("[%s] New firmware file already present in FS, wev download not necessary ...\n\r", __func__);
             fw_latest_dat = ReadFile(FW_LATEST_LOC);
         } else {
             // ..................................................
             // (:2)> New firmware file NOT present in FS, accessing the internet to check for updates
             // ..................................................
-            Serial.printf_P("[%s] New firmware file NOT present in FS, accessing the internet to check for updates ...\n\r", __func__);
+            Serial.printf_P("[%s] New firmware file NOT found in FS, accessing internet to check for updates ...\n\r", __func__);
             // Check local firmware version, currently running on the slave device
-            String fw_onboard_ver = ReadFile(FW_ONBOARD_VER);
+            fw_onboard_ver = ReadFile(FW_ONBOARD_VER);
             Serial.printf_P("[%s] ATtiny85 current firmware onboard: %s\n\r", __func__, fw_onboard_ver.c_str());
-            
-            // " <<< Wifi connection >>> "
+
+            // " <<< Wifi connection "
+            WiFi.mode(WIFI_STA);
+            WiFi.begin(ssid, password);
+            while (WiFi.status() != WL_CONNECTED) {
+                delay(1000);
+                Serial.printf_P(".");
+            }
+            Serial.printf_P("\n\r");
+            Serial.printf_P("[%s] WiFi connected! IP address: %s\n\r", __func__, WiFi.localIP().toString().c_str());
+            // " WiFi connection >>> "
 
             // Check the latest firmware version available for the slave device through WiFi
             char terminator = '\n';
             String fw_latest_ver = GetHttpDocument(FW_LATEST_VER, terminator, host, port, FINGERPRINT);
             //Serial.printf_P(".......................................................\n\r");
             Serial.printf_P("[%s] Latest firmware version available for ATtiny85: %s\n\r", __func__, fw_latest_ver.c_str());
-            if (fw_onboard_ver = fw_latest_ver) {
+            if (fw_onboard_ver == fw_latest_ver) {
                 // ..................................................
                 // (?3)> Update NOT needed, run the application and exit this update routine
                 // ..................................................
                 // ##### (S) #####
+                Serial.printf_P("[%s] Current onboard firmware [%s] is up to date ...\n\r", __func__, fw_onboard_ver.c_str());
                 StartApplication();
             } else {
                 // ..................................................
                 // (:3)> There is a new firmware version available, download it through WiFi
                 // ..................................................
+                Serial.printf_P("[%s] Onboard firmware version: %s, an update is available: %s ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_ver.c_str());
                 terminator = '\0';
                 String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_ver + ".hex";
-                String fw_latest_dat = GetHttpDocument(url, terminator, host, port, FINGERPRINT);
+                fw_latest_dat = GetHttpDocument(url, terminator, host, port, FINGERPRINT);
             }  // (/3)>
             WiFi.disconnect();
-        }      // (/2)>
+        }  // (/2)>
         uint16_t payload_size = GetIHexSize(fw_latest_dat);
         uint8_t payload[payload_size];
         if (ParseIHexFormat(fw_latest_dat, payload)) {
@@ -165,6 +162,7 @@ void CheckForUpdates(void) {
             // (:4)> Intel Hex firmware parsed correctly, binary payload ready to flash device
             // ..................................................
             WriteFile(FW_LATEST_LOC, fw_latest_dat);  // Saving the new firmware file to FS
+            // ******* ******* ******* ******* ******* ******* *******
             // uint8_t line_count = 0;
             // uint8_t char_count = 0;
             // Serial.printf_P("%02d) ", line_count++);
@@ -176,13 +174,15 @@ void CheckForUpdates(void) {
             //         char_count = 0;
             //     }
             // }
+            // Serial.printf_P("\n\r");
+            // ******* ******* ******* ******* ******* ******* *******
         }  // (/4)>
         uint8_t twi_address = 0;
         TwiBus twi_bus(SDA, SCL);
         twi_address = twi_bus.ScanBus();
         NbMicro *p_micro = nullptr;
         Timonel *p_timonel = nullptr;
-        Serial.printf_P("TWI address detected: %d", twi_address);
+        Serial.printf_P("[%s] TWI address detected: %d", __func__, twi_address);
         if (twi_address < LOW_TML_ADDR) {
             // ..................................................
             // (?5)> TWI device NOT detected in the bus, resetting master
@@ -220,20 +220,21 @@ void CheckForUpdates(void) {
                     delay(500);
                     // Run the new user application
                     p_timonel->RunApplication();
-                    Serial.printf_P("[%s] The user application should be running by now ... \n\r, __func__");
-                    delete p_timonel;
+                    Serial.printf_P("[%s] The user application should be running by now ... \n\r", __func__);
                     // Move the firmware name from "latest" to "onboard"
                     Rename(FW_LATEST_LOC, FW_ONBOARD_LOC);
+                    // Save current onboard firmware version
+                    WriteFile(FW_ONBOARD_VER, fw_onboard_ver);
                 } else {
                     // ..................................................
                     // (:7)> There were errors uploading the new firmware
                     // ..................................................
-                    USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b error! (%d)                          \n\r", errors);
+                    USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b error! (%d)                         \n\r", errors);
                     // ##### (R) #####
                     RetryRestart(UPDATE_TRIES, update_tries);
                 }  // (/7)>
                 // Remove Timonel object
-                //delete p_timonel;
+                delete p_timonel;
             } else {
                 // ..................................................
                 // (:6)> The address is above bootloader range, running an user application ...
@@ -244,7 +245,7 @@ void CheckForUpdates(void) {
                 delay(250);
                 delete p_micro;
                 Serial.printf_P("[%s] The user application should be stopped by now, restarting master to begin the update ...\n\r", __func__);
-                delay(2000);
+                delay(5000);
                 ESP.restart();
             }  // (/6)>
 
