@@ -22,8 +22,9 @@
 #define FW_WEB_URL "/casanovg/timonel-ota-demo/master/fw-attiny85"
 #define FW_ONBOARD_VER "/fw-onboard.md"
 #define FW_ONBOARD_LOC "/fw-onboard.hex"
+#define FW_LATEST_VER "/fw-latest.md"
 #define FW_LATEST_LOC "/fw-latest.hex"
-#define FW_LATEST_VER "/casanovg/timonel-ota-demo/master/fw-attiny85/fw-latest.md"
+#define FW_LATEST_WEB "/casanovg/timonel-ota-demo/master/fw-attiny85/fw-latest.md"
 #define UPDATE_TRIES "/update_tries.md"
 
 // ATtiny85 MAX update attempts number
@@ -34,7 +35,7 @@ const char FINGERPRINT[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78
 // const char FW_ONBOARD_VER[] PROGMEM = "/fw-onboard.md";
 // const char FW_ONBOARD_LOC[] PROGMEM = "/fw-onboard.hex";
 // const char FW_LATEST_LOC[] PROGMEM = "/fw-latest.hex";
-// const char FW_LATEST_VER[] PROGMEM = FW_WEB_URL "/fw-latest.md";
+// const char FW_LATEST_WEB[] PROGMEM = FW_WEB_URL "/fw-latest.md";
 // const char UPDATE_TRIES[] PROGMEM = "/update_tries.md";
 
 /*  ___________________
@@ -87,12 +88,13 @@ void loop(void) {
 */
 void CheckFwUpdate(void) {
     const char ssid[] = SSID;
-    const char password[] = PASS;    
+    const char password[] = PASS;
     const char host[] = "raw.githubusercontent.com";
     const int port = 443;
     uint8_t update_tries = 0;
     String fw_latest_dat = "";
     String fw_latest_ver = "";
+    String fw_latest_web = "";
     String fw_onboard_ver = "";
     ListFiles();
     // Reading update attempts recording file
@@ -111,6 +113,7 @@ void CheckFwUpdate(void) {
             // ..................................................
             Serial.printf_P("[%s] New firmware file already present in FS, web download not necessary ...\n\r", __func__);
             fw_latest_dat = ReadFile(FW_LATEST_LOC);
+            fw_latest_ver = ReadFile(FW_LATEST_VER);
         } else {
             // ..................................................
             // (:2)> New firmware file NOT present in FS, accessing the internet to check for updates
@@ -121,10 +124,10 @@ void CheckFwUpdate(void) {
             Serial.printf_P("[%s] ATtiny85 current firmware onboard: %s\n\r", __func__, fw_onboard_ver.c_str());
             // Check the latest firmware version available for the slave device through WiFi
             char terminator = '\n';
-            fw_latest_ver = GetHttpDocument(ssid, password, host, port, FINGERPRINT, FW_LATEST_VER, terminator);
+            fw_latest_web = GetHttpDocument(ssid, password, host, port, FINGERPRINT, FW_LATEST_WEB, terminator);
             //Serial.printf_P(".......................................................\n\r");
-            Serial.printf_P("[%s] Latest firmware version available for ATtiny85: [%s]\n\r", __func__, fw_latest_ver.c_str());
-            if (fw_onboard_ver == fw_latest_ver) {
+            Serial.printf_P("[%s] Latest firmware version available for ATtiny85 on the web: [%s]\n\r", __func__, fw_latest_web.c_str());
+            if (fw_onboard_ver == fw_latest_web) {
                 // ..................................................
                 // (?3)> Update NOT needed, run the application and exit this update routine
                 // ..................................................
@@ -136,10 +139,14 @@ void CheckFwUpdate(void) {
                 // ..................................................
                 // (:3)> There is a new firmware version available, download it through WiFi
                 // ..................................................
-                Serial.printf_P("[%s] Onboard firmware version: [%s], an update is available: [%s] ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_ver.c_str());
+                Serial.printf_P("[%s] Onboard firmware version: [%s], an update is available: [%s] ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_web.c_str());
                 terminator = '\0';
-                String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_ver + ".hex";
+                String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_web + ".hex";
                 fw_latest_dat = GetHttpDocument(ssid, password, host, port, FINGERPRINT, url, terminator);
+
+                WriteFile(FW_LATEST_LOC, fw_latest_dat);  // Saving the new firmware file to FS
+                WriteFile(FW_LATEST_VER, fw_latest_web);  // saving the new firmware version to FS
+
             }  // (/3)>
             // WiFi.disconnect();
         }  // (/2)>
@@ -156,7 +163,10 @@ void CheckFwUpdate(void) {
             // ..................................................
             // (:4)> Intel Hex firmware parsed correctly, binary payload ready to flash device
             // ..................................................
-            WriteFile(FW_LATEST_LOC, fw_latest_dat);  // Saving the new firmware file to FS
+
+            //WriteFile(FW_LATEST_LOC, fw_latest_dat);  // Saving the new firmware file to FS
+            //WriteFile(FW_LATEST_VER, fw_latest_web);  // saving the new firmware version to FS
+
             // ******* ******* ******* ******* ******* ******* *******
             // uint8_t line_count = 0;
             // uint8_t char_count = 0;
@@ -212,16 +222,20 @@ void CheckFwUpdate(void) {
                     // (?7)> Application firmware loaded on the device
                     // ..................................................
                     USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!                          \n\r");
-                    // Delete current onboard firmware version
-                    delay(125);
-                    DeleteFile(FW_ONBOARD_VER);
+                    // // Delete current onboard firmware version
+                    // delay(125);
+                    // DeleteFile(FW_ONBOARD_VER);
                     // Save new onboard firmware version
                     delay(125);
-                    WriteFile(FW_ONBOARD_VER, fw_latest_ver);
-                    // Move the firmware name from "latest" to "onboard"
-                    delay(250);
+                    //USE_SERIAL.printf_P("||||| LAST VER TO BE SAVED: %s |||||\n\r", fw_latest_web.c_str());
+                    // Move the firmware version file from "latest" to "onboard"
+                    Rename(FW_LATEST_VER, FW_ONBOARD_VER);
+                    // Move the firmware data file from "latest" to "onboard"
+                    delay(125);
                     Rename(FW_LATEST_LOC, FW_ONBOARD_LOC);
                     // Run the user application
+                    delay(125);
+                    p_timonel->RunApplication();
                 } else {
                     // ..................................................
                     // (:7)> There were errors uploading the new firmware
@@ -322,17 +336,17 @@ void setup() {
     // Check the latest firmware version available for the slave device
     char terminator = '\n';
     String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/fw-latest.md";
-    String fw_latest_ver = GetHttpDocument(url, terminator, host, port, fingerprint);
+    String fw_latest_web = GetHttpDocument(url, terminator, host, port, fingerprint);
     //Serial.printf_P(".......................................................\n\r");
-    Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_ver.c_str());
+    Serial.printf_P("Latest firmware version available for ATtiny85: %s\n\r", fw_latest_web.c_str());
     //Serial.printf_P(".......................................................\n\r");
     //There is a pending ATtiny85 firmware update file in the filesystem ...
 
-    if (fw_onboard_ver != fw_latest_ver) {
+    if (fw_onboard_ver != fw_latest_web) {
         //if (true) {
         // Update needed: get the latest firmware available for the ATtiny85 from internet
         terminator = '\0';
-        url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_ver + ".hex";
+        url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_web + ".hex";
         String fw_file_rem = GetHttpDocument(url, terminator, host, port, fingerprint);
 
         // Save the latest firmware into the filesystem
@@ -406,7 +420,7 @@ void setup() {
                 timonel->RunApplication();
                 Serial.printf_P("\n\rThe user application should be running by now ... \n\r");
                 // Save the latest firmware version info to the filesystem
-                WriteFile("/fw-onboard.md", fw_latest_ver);
+                WriteFile("/fw-onboard.md", fw_latest_web);
                 // Move the firmware name from "latest" to "onboard"
                 Rename("/fw-latest.hex", "/fw-onboard.hex");
             } else {
