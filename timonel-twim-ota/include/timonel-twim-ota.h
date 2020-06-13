@@ -36,6 +36,7 @@ bool Exists(const char file_name[]);
 String ReadFile(const char file_name[]);
 uint8_t WriteFile(const char file_name[], const String file_data);
 uint8_t Rename(const char source_file_name[], const char destination_file_name[]);
+uint8_t DeleteFile(const char file_name[]);
 String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]);
 bool ParseIHexFormat(String serialized_file, uint8_t *payload);
 uint16_t GetIHexSize(String serialized_file);

@@ -80,6 +80,11 @@ void loop(void) {
 // #############################################################################################
 
 // Function CheckForUpdates
+/*   _________________________
+    |                         | 
+    |     CheckForUpdates     |
+    |_________________________|
+*/
 void CheckForUpdates(void) {
     uint8_t update_tries = 0;
     String fw_latest_dat = "";
@@ -130,19 +135,20 @@ void CheckForUpdates(void) {
             char terminator = '\n';
             fw_latest_ver = GetHttpDocument(FW_LATEST_VER, terminator, host, port, FINGERPRINT);
             //Serial.printf_P(".......................................................\n\r");
-            Serial.printf_P("[%s] Latest firmware version available for ATtiny85: %s\n\r", __func__, fw_latest_ver.c_str());
+            Serial.printf_P("[%s] Latest firmware version available for ATtiny85: [%s]\n\r", __func__, fw_latest_ver.c_str());
             if (fw_onboard_ver == fw_latest_ver) {
                 // ..................................................
                 // (?3)> Update NOT needed, run the application and exit this update routine
                 // ..................................................
                 // ##### (S) #####
-                Serial.printf_P("[%s] Current onboard firmware [%s] is up to date ...\n\r", __func__, fw_onboard_ver.c_str());
+                Serial.printf_P("[%s] ===== Current onboard firmware [%s] is up to date =====\n\r", __func__, fw_onboard_ver.c_str());
                 StartApplication();
+                return;
             } else {
                 // ..................................................
                 // (:3)> There is a new firmware version available, download it through WiFi
                 // ..................................................
-                Serial.printf_P("[%s] Onboard firmware version: %s, an update is available: %s ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_ver.c_str());
+                Serial.printf_P("[%s] Onboard firmware version: [%s], an update is available: [%s] ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_ver.c_str());
                 terminator = '\0';
                 String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_ver + ".hex";
                 fw_latest_dat = GetHttpDocument(url, terminator, host, port, FINGERPRINT);
@@ -257,8 +263,11 @@ void CheckForUpdates(void) {
         // (1)> Update retries exceeded, running the application and exiting this update routine
         // ..................................................
         // ##### (S) #####
-        Serial.printf_P("[%s] Retry [%d of %d] attempted, formating FS, running the application and exiting ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
-        Format();
+        Serial.printf_P("[%s] Retry [%d of %d] attempted, cleaning, running the application and exiting ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
+        //Format();
+        DeleteFile(FW_LATEST_LOC);
+        //WriteFile(UPDATE_TRIES, (String)(MAX_UPDATE_TRIES + 1));
+        WriteFile(UPDATE_TRIES, "0");
         StartApplication();
     }  // (/1)>
 }
@@ -280,7 +289,8 @@ void RetryRestart(const char file_name[], uint8_t update_tries) {
     update_tries++;
     Serial.printf_P("[%s] Saving [%d] to retry counter and resetting ...\n\r", __func__, update_tries);
     WriteFile(file_name, (String)update_tries);
-    //ESP.restart();
+    delay(3000);
+    ESP.restart();
 }
 
 #if POPEYE
@@ -545,6 +555,26 @@ uint8_t WriteFile(const char file_name[], const String file_data) {
         Serial.printf_P("[%s] \"%s\" file writing failed!\n\r", __func__, file_name);
         errors += 3;
         // File writing error!
+    }
+    SPIFFS.end();
+    return errors;
+}
+
+// Function DeleteFile
+uint8_t DeleteFile(const char file_name[]) {
+    uint8_t errors = 0;
+    if (SPIFFS.begin()) {
+        //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
+        errors += 1;
+        // Mount error!
+    }
+    errors += SPIFFS.remove(file_name);  // This allows overwriting
+    if (errors) {
+        //Serial.printf_P("[%s] File deleted successfully ...\n\r", __func__);
+    } else {
+        Serial.printf_P("[%s] File \"%s\" deleting failed!\n\r", __func__, file_name);
     }
     SPIFFS.end();
     return errors;
