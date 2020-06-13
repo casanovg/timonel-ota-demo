@@ -212,12 +212,16 @@ void CheckFwUpdate(void) {
                     // (?7)> Application firmware loaded on the device
                     // ..................................................
                     USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!                          \n\r");
-                    delay(250);
-                    // Save current onboard firmware version
+                    // Delete current onboard firmware version
+                    delay(125);
+                    DeleteFile(FW_ONBOARD_VER);
+                    // Save new onboard firmware version
+                    delay(125);
                     WriteFile(FW_ONBOARD_VER, fw_latest_ver);
-                    delay(250);
                     // Move the firmware name from "latest" to "onboard"
+                    delay(250);
                     Rename(FW_LATEST_LOC, FW_ONBOARD_LOC);
+                    // Run the user application
                 } else {
                     // ..................................................
                     // (:7)> There were errors uploading the new firmware
@@ -481,7 +485,7 @@ String GetHttpDocument(const char ssid[],
     // Use WiFiClientSecure class to create TLS connection
     String http_string = "";
     WiFiClientSecure client;
-    Serial.printf_P("[%s] Connecting to web site: %s", __func__, host);
+    Serial.printf_P("[%s] Connecting to web site: %s\n\r", __func__, host);
     //Serial.printf_P(" with fingerprint: %s\n\r", fingerprint);
     client.setFingerprint(fingerprint);
     if (!client.connect(host, port)) {
