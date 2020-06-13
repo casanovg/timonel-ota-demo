@@ -48,9 +48,9 @@ void setup(void) {
     ClrScr();
     delay(3000);
     Serial.printf_P("\n\r");
-    Serial.printf_P("..........................................\n\r");
-    Serial.printf_P(".          TIMONEL-TWIM-OTA 1.0          .\n\r");
-    Serial.printf_P("..........................................\n\r");
+    Serial.printf_P("...............................................\n\r");
+    Serial.printf_P(".          TIMONEL-TWIM-OTA DEMO 1.0          .\n\r");
+    Serial.printf_P("...............................................\n\r");
 
     CheckFwUpdate();
 }
@@ -62,7 +62,8 @@ void setup(void) {
 */
 void loop(void) {
     uint16_t seconds = 60;
-    Serial.printf_P("\n\rI2C master main loop started ...\n\n\r");
+    Serial.printf_P("\n\rI2C master main loop started");
+    Serial.printf_P("\n\r============================\n\n\r");
 
     while (seconds) {
         Serial.printf_P(".%d ", seconds);
@@ -118,15 +119,18 @@ void CheckFwUpdate(void) {
             // ..................................................
             // (:2)> New firmware file NOT present in FS, accessing the internet to check for updates
             // ..................................................
-            Serial.printf_P("[%s] New firmware file NOT found in FS, accessing internet to check for updates ...\n\r", __func__);
+            Serial.printf_P("[%s] No new firmware file in FS, accessing internet to check for updates ...\n\r", __func__);
             // Check local firmware version, currently running on the slave device
             fw_onboard_ver = ReadFile(FW_ONBOARD_VER);
-            Serial.printf_P("[%s] ATtiny85 current firmware onboard: %s\n\r", __func__, fw_onboard_ver.c_str());
+            if (fw_onboard_ver == "") {
+                fw_onboard_ver = "unknown";
+            }
+            //Serial.printf_P("[%s] ATtiny85 current firmware onboard: %s\n\r", __func__, fw_onboard_ver.c_str());
             // Check the latest firmware version available for the slave device through WiFi
             char terminator = '\n';
             fw_latest_web = GetHttpDocument(ssid, password, host, port, FINGERPRINT, FW_LATEST_WEB, terminator);
             //Serial.printf_P(".......................................................\n\r");
-            Serial.printf_P("[%s] Latest firmware version available for ATtiny85 on the web: [%s]\n\r", __func__, fw_latest_web.c_str());
+            //Serial.printf_P("[%s] Latest firmware version available for ATtiny85 on the web: [%s]\n\r", __func__, fw_latest_web.c_str());
             if (fw_onboard_ver == fw_latest_web) {
                 // ..................................................
                 // (?3)> Update NOT needed, run the application and exit this update routine
@@ -139,7 +143,7 @@ void CheckFwUpdate(void) {
                 // ..................................................
                 // (:3)> There is a new firmware version available, download it through WiFi
                 // ..................................................
-                Serial.printf_P("[%s] Onboard firmware version: [%s], an update is available: [%s] ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_web.c_str());
+                Serial.printf_P("[%s] Onboard firmware version: [%s], a web update is available: [%s] ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_web.c_str());
                 terminator = '\0';
                 String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_web + ".hex";
                 fw_latest_dat = GetHttpDocument(ssid, password, host, port, FINGERPRINT, url, terminator);
@@ -163,10 +167,6 @@ void CheckFwUpdate(void) {
             // ..................................................
             // (:4)> Intel Hex firmware parsed correctly, binary payload ready to flash device
             // ..................................................
-
-            //WriteFile(FW_LATEST_LOC, fw_latest_dat);  // Saving the new firmware file to FS
-            //WriteFile(FW_LATEST_VER, fw_latest_web);  // saving the new firmware version to FS
-
             // ******* ******* ******* ******* ******* ******* *******
             // uint8_t line_count = 0;
             // uint8_t char_count = 0;
@@ -222,19 +222,18 @@ void CheckFwUpdate(void) {
                     // (?7)> Application firmware loaded on the device
                     // ..................................................
                     USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!                          \n\r");
-                    // // Delete current onboard firmware version
-                    // delay(125);
-                    // DeleteFile(FW_ONBOARD_VER);
                     // Save new onboard firmware version
-                    delay(125);
-                    //USE_SERIAL.printf_P("||||| LAST VER TO BE SAVED: %s |||||\n\r", fw_latest_web.c_str());
+                    //delay(125);
                     // Move the firmware version file from "latest" to "onboard"
                     Rename(FW_LATEST_VER, FW_ONBOARD_VER);
                     // Move the firmware data file from "latest" to "onboard"
-                    delay(125);
+                    //delay(125);
                     Rename(FW_LATEST_LOC, FW_ONBOARD_LOC);
+                    // Reset the retry counter file
+                    //delay(125);
+                    WriteFile(UPDATE_TRIES, "0");
                     // Run the user application
-                    delay(125);
+                    //delay(125);
                     p_timonel->RunApplication();
                 } else {
                     // ..................................................
@@ -266,10 +265,10 @@ void CheckFwUpdate(void) {
         // (1)> Update retries exceeded, running the application and exiting this update routine
         // ..................................................
         // ##### (S) #####
-        Serial.printf_P("[%s] Retry [%d of %d] attempted, cleaning, running the application and exiting ...\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
+        Serial.printf_P("[%s] Retry [%d of %d] failed, please power-cycle both, master and slave devices!\n\r", __func__, update_tries, MAX_UPDATE_TRIES);
         //Format();
         DeleteFile(FW_LATEST_LOC);
-        //WriteFile(UPDATE_TRIES, (String)(MAX_UPDATE_TRIES + 1));
+        DeleteFile(FW_LATEST_VER);
         WriteFile(UPDATE_TRIES, "0");
         StartApplication();
     }  // (/1)>
@@ -280,10 +279,16 @@ void StartApplication(void) {
     uint8_t twi_address = 0;
     TwiBus twi_bus(SDA, SCL);
     twi_address = twi_bus.ScanBus();
-    Serial.printf_P("[%s] Trying to start the user application ...\n\r", __func__);
-    if ((twi_address >= LOW_TML_ADDR) && (twi_address <= HIG_TML_ADDR)) {
-        Timonel timonel(twi_address, SDA, SCL);
-        timonel.RunApplication();
+    if (twi_address < LOW_TML_ADDR) {
+        Serial.printf_P("[%s] Invalid device TWI address detected (%d), probably a power-cycle would help ...\n\r", __func__, twi_address);
+    } else {
+        if (twi_address <= HIG_TML_ADDR) {
+            Serial.printf_P("[%s] Timonel TWI address detected (%d), trying to start the user application ...\n\r", __func__, twi_address);
+            Timonel timonel(twi_address, SDA, SCL);
+            timonel.RunApplication();
+        } else {
+            Serial.printf_P("[%s] Application TWI address detected (%d), letting it run ...\n\r", __func__, twi_address);
+        }
     }
 }
 
@@ -494,7 +499,7 @@ String GetHttpDocument(const char ssid[],
         Serial.printf_P(".");
     }
     Serial.printf_P("\n\r");
-    Serial.printf_P("[%s] WiFi connected! IP address: %s\n\r", __func__, WiFi.localIP().toString().c_str());
+    //Serial.printf_P("[%s] WiFi connected! IP address: %s\n\r", __func__, WiFi.localIP().toString().c_str());
     // " WiFi connection >>> "
     // Use WiFiClientSecure class to create TLS connection
     String http_string = "";
@@ -506,27 +511,27 @@ String GetHttpDocument(const char ssid[],
         Serial.printf_P("[%s] HTTP connection failed!\n\r", __func__);
         // Connection error!
     }
-    Serial.printf_P("[%s] URL Request: %s\n\r", __func__, url.c_str());
+    //Serial.printf_P("[%s] URL Request: %s\n\r", __func__, url.c_str());
     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                  "Host: " + host + "\r\n" +
                  "User-Agent: TimonelTwiMOtaESP8266\r\n" +
                  "Connection: close\r\n\r\n");
-    Serial.printf_P("[%s] Request sent ...\n\r", __func__);
+    //Serial.printf_P("[%s] Request sent ...\n\r", __func__);
     while (client.connected()) {
         String line = client.readStringUntil('\n');
         if (line == "\r") {
-            Serial.printf_P("[%s] Headers received ...\n\r", __func__);
+            //Serial.printf_P("[%s] Headers received ...\n\r", __func__);
             break;
         }
     }
     http_string = client.readStringUntil(terminator);
     if (http_string != "") {
-        Serial.printf_P("[%s] HTTP data received ...\n\r", __func__);
+        Serial.printf_P("[%s] HTTP data received via WiFi ...\n\r", __func__);
     } else {
-        Serial.printf_P("[%s] No HTTP data received!\n\r", __func__);
+        Serial.printf_P("[%s] No HTTP data received via WiFi!\n\r", __func__);
     }
     WiFi.disconnect();
-    Serial.printf_P("[%s] WiFi disconnected!\n\r", __func__);
+    //Serial.printf_P("[%s] WiFi disconnected!\n\r", __func__);
     return http_string;
 }
 
