@@ -25,7 +25,7 @@
 #define FW_LATEST_VER "/fw-latest.md"
 #define FW_LATEST_LOC "/fw-latest.hex"
 #define FW_LATEST_WEB "/casanovg/timonel-ota-demo/master/fw-attiny85/fw-latest.md"
-#define UPDATE_TRIES "/update_tries.md"
+#define UPDATE_TRIES "/update-tries.md"
 
 // ATtiny85 MAX update attempts number
 const uint8_t MAX_UPDATE_TRIES = 3;
