@@ -129,7 +129,7 @@ void CheckFwUpdate(void) {
                 // (?3)> Update NOT needed, run the application and exit this update routine
                 // ..................................................
                 // ##### (S) #####
-                Serial.printf_P("[%s] =====>> Current onboard firmware [%s] is up to date! <<=====\n\r", __func__, fw_onboard_ver.c_str());
+                Serial.printf_P("[%s] ===>> Current onboard firmware [%s] is up to date! <<===\n\r", __func__, fw_onboard_ver.c_str());
                 StartApplication();
                 return;
             } else {
@@ -212,15 +212,12 @@ void CheckFwUpdate(void) {
                     // (?7)> Application firmware loaded on the device
                     // ..................................................
                     USE_SERIAL.printf_P("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b successful!                          \n\r");
-                    delay(500);
-                    // Run the new user application
-                    p_timonel->RunApplication();
-                    Serial.printf_P("[%s] The user application should be running by now ... \n\r", __func__);
-                    // Move the firmware name from "latest" to "onboard"
-                    Rename(FW_LATEST_LOC, FW_ONBOARD_LOC);
                     delay(250);
                     // Save current onboard firmware version
                     WriteFile(FW_ONBOARD_VER, fw_latest_ver);
+                    delay(250);
+                    // Move the firmware name from "latest" to "onboard"
+                    Rename(FW_LATEST_LOC, FW_ONBOARD_LOC);
                 } else {
                     // ..................................................
                     // (:7)> There were errors uploading the new firmware
