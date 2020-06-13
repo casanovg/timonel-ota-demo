@@ -285,6 +285,8 @@ void StartApplication(void) {
         if (twi_address <= HIG_TML_ADDR) {
             Serial.printf_P("[%s] Timonel TWI address detected (%d), trying to start the user application ...\n\r", __func__, twi_address);
             Timonel timonel(twi_address, SDA, SCL);
+            timonel.GetStatus();
+            delay(125);
             timonel.RunApplication();
         } else {
             Serial.printf_P("[%s] Application TWI address detected (%d), letting it run ...\n\r", __func__, twi_address);
