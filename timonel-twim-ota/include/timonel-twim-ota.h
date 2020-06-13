@@ -28,7 +28,7 @@
 
 // Prototypes
 void ClrScr(void);
-void CheckForUpdates(void);
+void CheckFwUpdate(void);
 //CheckForUpdates(const char url[], const char host[]);
 uint8_t Format(void);
 uint8_t ListFiles(void);
@@ -37,7 +37,14 @@ String ReadFile(const char file_name[]);
 uint8_t WriteFile(const char file_name[], const String file_data);
 uint8_t Rename(const char source_file_name[], const char destination_file_name[]);
 uint8_t DeleteFile(const char file_name[]);
-String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]);
+//String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]);
+String GetHttpDocument(const char ssid[],
+                       const char password[],
+                       const char host[],
+                       const int port,
+                       const char fingerprint[],
+                       String url,
+                       char terminator);
 bool ParseIHexFormat(String serialized_file, uint8_t *payload);
 uint16_t GetIHexSize(String serialized_file);
 void StartApplication(void);

@@ -51,7 +51,7 @@ void setup(void) {
     Serial.printf_P(".          TIMONEL-TWIM-OTA 1.0          .\n\r");
     Serial.printf_P("..........................................\n\r");
 
-    CheckForUpdates();
+    CheckFwUpdate();
 }
 
 /*   ___________________
@@ -85,15 +85,15 @@ void loop(void) {
     |     CheckForUpdates     |
     |_________________________|
 */
-void CheckForUpdates(void) {
+void CheckFwUpdate(void) {
+    const char ssid[] = SSID;
+    const char password[] = PASS;    
+    const char host[] = "raw.githubusercontent.com";
+    const int port = 443;
     uint8_t update_tries = 0;
     String fw_latest_dat = "";
     String fw_latest_ver = "";
     String fw_onboard_ver = "";
-    const char ssid[] = SSID;
-    const char password[] = PASS;
-    const char host[] = "raw.githubusercontent.com";
-    const int port = 443;
     ListFiles();
     // Reading update attempts recording file
     if (ReadFile(UPDATE_TRIES).charAt(0) != '\0') {
@@ -119,21 +119,9 @@ void CheckForUpdates(void) {
             // Check local firmware version, currently running on the slave device
             fw_onboard_ver = ReadFile(FW_ONBOARD_VER);
             Serial.printf_P("[%s] ATtiny85 current firmware onboard: %s\n\r", __func__, fw_onboard_ver.c_str());
-
-            // " <<< Wifi connection "
-            WiFi.mode(WIFI_STA);
-            WiFi.begin(ssid, password);
-            while (WiFi.status() != WL_CONNECTED) {
-                delay(1000);
-                Serial.printf_P(".");
-            }
-            Serial.printf_P("\n\r");
-            Serial.printf_P("[%s] WiFi connected! IP address: %s\n\r", __func__, WiFi.localIP().toString().c_str());
-            // " WiFi connection >>> "
-
             // Check the latest firmware version available for the slave device through WiFi
             char terminator = '\n';
-            fw_latest_ver = GetHttpDocument(FW_LATEST_VER, terminator, host, port, FINGERPRINT);
+            fw_latest_ver = GetHttpDocument(ssid, password, host, port, FINGERPRINT, FW_LATEST_VER, terminator);
             //Serial.printf_P(".......................................................\n\r");
             Serial.printf_P("[%s] Latest firmware version available for ATtiny85: [%s]\n\r", __func__, fw_latest_ver.c_str());
             if (fw_onboard_ver == fw_latest_ver) {
@@ -141,7 +129,7 @@ void CheckForUpdates(void) {
                 // (?3)> Update NOT needed, run the application and exit this update routine
                 // ..................................................
                 // ##### (S) #####
-                Serial.printf_P("[%s] ===== Current onboard firmware [%s] is up to date =====\n\r", __func__, fw_onboard_ver.c_str());
+                Serial.printf_P("[%s] =====>> Current onboard firmware [%s] is up to date! <<=====\n\r", __func__, fw_onboard_ver.c_str());
                 StartApplication();
                 return;
             } else {
@@ -151,9 +139,9 @@ void CheckForUpdates(void) {
                 Serial.printf_P("[%s] Onboard firmware version: [%s], an update is available: [%s] ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_ver.c_str());
                 terminator = '\0';
                 String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_ver + ".hex";
-                fw_latest_dat = GetHttpDocument(url, terminator, host, port, FINGERPRINT);
+                fw_latest_dat = GetHttpDocument(ssid, password, host, port, FINGERPRINT, url, terminator);
             }  // (/3)>
-            WiFi.disconnect();
+            // WiFi.disconnect();
         }  // (/2)>
         uint16_t payload_size = GetIHexSize(fw_latest_dat);
         uint8_t payload[payload_size];
@@ -473,12 +461,31 @@ void ClrScr(void) {
 }
 
 // Function GetHttpDocument
-String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]) {
+String GetHttpDocument(const char ssid[],
+                       const char password[],
+                       const char host[],
+                       const int port,
+                       const char fingerprint[],
+                       String url,
+                       char terminator) {
+    //const char ssid[] = SSID;
+    //const char password[] = PASS;
+    // " <<< Wifi connection "
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    Serial.printf_P("[%s] Opening WiFi connection ", __func__);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.printf_P(".");
+    }
+    Serial.printf_P("\n\r");
+    Serial.printf_P("[%s] WiFi connected! IP address: %s\n\r", __func__, WiFi.localIP().toString().c_str());
+    // " WiFi connection >>> "
     // Use WiFiClientSecure class to create TLS connection
     String http_string = "";
     WiFiClientSecure client;
     Serial.printf_P("[%s] Connecting to web site: %s", __func__, host);
-    Serial.printf_P(" with fingerprint: %s\n\r", fingerprint);
+    //Serial.printf_P(" with fingerprint: %s\n\r", fingerprint);
     client.setFingerprint(fingerprint);
     if (!client.connect(host, port)) {
         Serial.printf_P("[%s] HTTP connection failed!\n\r", __func__);
@@ -503,6 +510,8 @@ String GetHttpDocument(String url, char terminator, const char host[], const int
     } else {
         Serial.printf_P("[%s] No HTTP data received!\n\r", __func__);
     }
+    WiFi.disconnect();
+    Serial.printf_P("[%s] WiFi disconnected!\n\r", __func__);
     return http_string;
 }
 
