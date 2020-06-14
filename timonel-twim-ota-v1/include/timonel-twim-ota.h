@@ -17,8 +17,8 @@
 #ifndef SSID
 #define SSID "Nicebots.com"
 #define PASS "R2-D2 C-3P0"
-// #define SSID "HTA Buen Ayre"
-// #define PASS "BB-8 C-3P0"
+// #define SSID "YourSSID"
+// #define PASS "Password"
 #endif  // SSID
 
 #define SDA 2  // I2C SDA pin - ESP8266 2 - ESP32 21
