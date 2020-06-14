@@ -42,14 +42,13 @@ String ReadFile(const char file_name[]);
 uint8_t WriteFile(const char file_name[], const String file_data);
 uint8_t Rename(const char source_file_name[], const char destination_file_name[]);
 uint8_t DeleteFile(const char file_name[]);
-String GetFwUpdate(const char ssid[],
+String CheckFwUpdate(const char ssid[],
                    const char password[],
                    const char host[],
                    const int port,
                    const char fingerprint[],
                    const String current_version,
-                   const String latest_version,
-                   const String latest_url);
+                   const String latest_version);
 String GetHttpDocument(const char ssid[],
                        const char password[],
                        const char host[],

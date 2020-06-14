@@ -55,11 +55,15 @@ void setup(void) {
     Serial.printf_P(".          TIMONEL-TWIM-OTA DEMO 2.0          .\n\r");
     Serial.printf_P("...............................................\n\r");
 
-    // GetFwUpdate();
-    GetFwUpdate(SSID, PASS, WEB_HOST, WEB_PORT, FINGERPRINT,
-                ReadFile(FW_ONBOARD_VER),
-                FW_LATEST_WEB,
-                FW_WEB_URL);
+    // CheckFwUpdate();
+    String new_ver = CheckFwUpdate(SSID, PASS, WEB_HOST, WEB_PORT, FINGERPRINT,
+                                   ReadFile(FW_ONBOARD_VER),
+                                   FW_LATEST_WEB);
+    if (new_ver != "") {
+        Serial.printf_P("New firmware version found on the intenet: %s\n\r", new_ver.c_str());
+    } else {
+        Serial.printf_P("No new firmware version available ...\n\r");
+    }
 }
 
 /*   ___________________
@@ -88,19 +92,18 @@ void loop(void) {
 // #############################################################################################
 // #############################################################################################
 
-/*   _____________________
-    |                     | 
-    |     GetFwUpdate     |
-    |_____________________|
+/*   _______________________
+    |                       | 
+    |     CheckFwUpdate     |
+    |_______________________|
 */
-String GetFwUpdate(const char ssid[],
-                   const char password[],
-                   const char host[],
-                   const int port,
-                   const char fingerprint[],
-                   const String current_version,
-                   const String latest_version,
-                   const String latest_url) {
+String CheckFwUpdate(const char ssid[],
+                     const char password[],
+                     const char host[],
+                     const int port,
+                     const char fingerprint[],
+                     const String current_version,
+                     const String latest_version) {
     // const char ssid[] = SSID;
     // const char password[] = PASS;
     // const char host[] = "raw.githubusercontent.com";
