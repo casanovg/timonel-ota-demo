@@ -145,7 +145,7 @@ void CheckFwUpdate(void) {
                 // ..................................................
                 Serial.printf_P("[%s] Onboard firmware version: [%s], a web update is available: [%s] ...\n\r", __func__, fw_onboard_ver.c_str(), fw_latest_web.c_str());
                 terminator = '\0';
-                String url = "/casanovg/timonel-ota-demo/master/fw-attiny85/firmware-" + fw_latest_web + ".hex";
+                String url = FW_WEB_URL "/firmware-" + fw_latest_web + ".hex";
                 fw_latest_dat = GetHttpDocument(ssid, password, host, port, FINGERPRINT, url, terminator);
 
                 WriteFile(FW_LATEST_LOC, fw_latest_dat);  // Saving the new firmware file to FS
