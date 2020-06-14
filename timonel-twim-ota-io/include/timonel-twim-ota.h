@@ -20,8 +20,8 @@
 #include <nb-twi-cmd.h>
 
 #ifndef SSID
-#define SSID "YourSSID"
-#define PASS "Password"
+#define SSID "Nicebots.com"
+#define PASS "R2-D2 C-3P0"
 #endif  // SSID
 
 // Prototypes
@@ -35,6 +35,7 @@ String ReadFile(const char file_name[]);
 uint8_t WriteFile(const char file_name[], const String file_data);
 uint8_t Rename(const char source_file_name[], const char destination_file_name[]);
 uint8_t DeleteFile(const char file_name[]);
+void RotaryDelay(void);
 
 String CheckFwUpdate(const char ssid[],
                    const char password[],
