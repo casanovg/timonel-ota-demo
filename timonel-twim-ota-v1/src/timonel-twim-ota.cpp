@@ -1,7 +1,7 @@
 /*
   timonel-twim-ota.cpp
   =====================
-  Timonel OTA Demo v2.0
+  Timonel OTA Demo v1.0
   ----------------------------------------------------------------------------
   This demo updates an ESP8266 I2C master over-the-air:
   1-The ESP9266 firmware runs Timonel bootloader master amd has an ATttiny85
@@ -13,7 +13,7 @@
   4-The ESP8266 exits Timonel bootloader master and enters its normal
     operation loop, where it also makes frequent checks for new OTA updates.
   ----------------------------------------------------------------------------
-  2020-06-13 Gustavo Casanova
+  2020-06-06 Gustavo Casanova
   ----------------------------------------------------------------------------
 */
 
@@ -24,11 +24,8 @@
 #define FW_ONBOARD_LOC "/fw-onboard.hex"
 #define FW_LATEST_VER "/fw-latest.md"
 #define FW_LATEST_LOC "/fw-latest.hex"
-#define FW_LATEST_WEB "/casanovg/timonel-ota-demo/master/fw-attiny85/fw-latest.md"
+#define FW_LATEST_WEB FW_WEB_URL "/fw-latest.md"
 #define UPDATE_TRIES "/update-tries.md"
-
-#define WEB_HOST "raw.githubusercontent.com"
-#define WEB_PORT 443
 
 // ATtiny85 MAX update attempts number
 const uint8_t MAX_UPDATE_TRIES = 3;
@@ -52,14 +49,10 @@ void setup(void) {
     delay(3000);
     Serial.printf_P("\n\r");
     Serial.printf_P("...............................................\n\r");
-    Serial.printf_P(".          TIMONEL-TWIM-OTA DEMO 2.0          .\n\r");
+    Serial.printf_P(".          TIMONEL-TWIM-OTA DEMO 1.0          .\n\r");
     Serial.printf_P("...............................................\n\r");
 
-    // GetFwUpdate();
-    GetFwUpdate(SSID, PASS, WEB_HOST, WEB_PORT, FINGERPRINT,
-                ReadFile(FW_ONBOARD_VER),
-                FW_LATEST_WEB,
-                FW_WEB_URL);
+    CheckFwUpdate();
 }
 
 /*   ___________________
@@ -88,55 +81,13 @@ void loop(void) {
 // #############################################################################################
 // #############################################################################################
 
-/*   _____________________
-    |                     | 
-    |     GetFwUpdate     |
-    |_____________________|
+// Function CheckForUpdates
+/*   _________________________
+    |                         | 
+    |     CheckForUpdates     |
+    |_________________________|
 */
-String GetFwUpdate(const char ssid[],
-                   const char password[],
-                   const char host[],
-                   const int port,
-                   const char fingerprint[],
-                   const String current_version,
-                   const String latest_version,
-                   const String latest_url) {
-    // const char ssid[] = SSID;
-    // const char password[] = PASS;
-    // const char host[] = "raw.githubusercontent.com";
-    // const int port = 443;
-    String fw_latest_ver = "";
-    ListFiles();
-    // ..................................................
-    // Accessing the internet to check for updates
-    // ..................................................
-    // Check local firmware version, currently running on the slave device
-    //String fw_onboard_ver = ReadFile(fw_onboard_ver_file);
-    // Check the latest firmware version available for the slave device through WiFi
-    Serial.printf_P("[%s] Connecting to the internet to check for updates ...\n\r", __func__);
-    char terminator = '\n';
-    String fw_latest_web = GetHttpDocument(ssid, password, host, port, fingerprint, latest_version, terminator);
-    //Serial.printf_P(".......................................................\n\r");
-    //Serial.printf_P("[%s] Latest firmware version available for ATtiny85 on the web: [%s]\n\r", __func__, fw_latest_web.c_str());
-    if (current_version == fw_latest_web) {
-        // Update NOT needed
-        Serial.printf_P("[%s] ===>> Current onboard firmware [%s] is up to date! <<===\n\r", __func__, current_version.c_str());
-    } else {
-        // ..................................................
-        // There is a new firmware version available
-        // ..................................................
-        Serial.printf_P("[%s] Onboard firmware version: [%s], a web update is available: [%s] ...\n\r", __func__, current_version.c_str(), fw_latest_web.c_str());
-        fw_latest_ver = fw_latest_web;
-    }
-    return fw_latest_ver;
-}
-
-/*   ________________________
-    |                        | 
-    |     UpdateFirmware     |
-    |________________________|
-*/
-void UpdateFirmware(void) {
+void CheckFwUpdate(void) {
     const char ssid[] = SSID;
     const char password[] = PASS;
     const char host[] = "raw.githubusercontent.com";

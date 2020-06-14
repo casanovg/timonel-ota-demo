@@ -1,11 +1,6 @@
-/*
-  timonel-twim-ota.h
-  =====================
-  Timonel OTA Demo v2.0
-  ----------------------------------------------------------------------------
-  2020-06-13 Gustavo Casanova
-  ----------------------------------------------------------------------------
-*/
+//
+// -----
+//
 
 #ifndef _TIMONEL_TWIM_OTA_H_
 #define _TIMONEL_TWIM_OTA_H_
@@ -42,14 +37,7 @@ String ReadFile(const char file_name[]);
 uint8_t WriteFile(const char file_name[], const String file_data);
 uint8_t Rename(const char source_file_name[], const char destination_file_name[]);
 uint8_t DeleteFile(const char file_name[]);
-String GetFwUpdate(const char ssid[],
-                   const char password[],
-                   const char host[],
-                   const int port,
-                   const char fingerprint[],
-                   const String current_version,
-                   const String latest_version,
-                   const String latest_url);
+//String GetHttpDocument(String url, char terminator, const char host[], const int port, const char fingerprint[]);
 String GetHttpDocument(const char ssid[],
                        const char password[],
                        const char host[],
