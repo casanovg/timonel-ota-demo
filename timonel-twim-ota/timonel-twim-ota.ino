@@ -20,11 +20,11 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <FS.h>
 #include <NbMicro.h>
 #include <TimonelTwiM.h>
 #include <TwiBus.h>
-#include <WiFiClientSecure.h>
 #include <nb-twi-cmd.h>
 
 // WiFi
