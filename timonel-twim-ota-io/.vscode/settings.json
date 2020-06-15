@@ -2,6 +2,6 @@
     "files.associations": {
         "*.mak": "makefile",
         "*.make": "makefile",
-        "string": "cpp"
+        "new": "cpp"
     }
 }
