@@ -66,6 +66,17 @@ void setup(void) {
     Serial.printf_P(".          TIMONEL-TWIM-OTA DEMO 2.0          .\n\r");
     Serial.printf_P("...............................................\n\r");
 
+    uint8_t slave_address = 0;
+    TwiBus *p_twi_bus = new TwiBus(SDA, SCL);
+    // Keep waiting until a slave device is detected    
+    USE_SERIAL.printf_P("\n\rWaiting until a TWI slave device is detected on the bus   ");
+    while (slave_address == 0) {
+        slave_address = p_twi_bus->ScanBus();
+        RotaryDelay();
+    }
+    USE_SERIAL.printf_P("\n\n\r");
+    delete p_twi_bus;
+
     String new_ver = CheckFwUpdate(SSID, PASS, WEB_HOST, WEB_PORT, FINGERPRINT,
                                    ReadFile(FW_ONBOARD_VER),
                                    FW_LATEST_WEB);
@@ -74,6 +85,7 @@ void setup(void) {
         UpdateFirmware(new_ver);
     } else {
         Serial.printf_P("No new firmware version available ...\n\r");
+        StartApplication();
     }
 }
 
@@ -624,4 +636,20 @@ uint16_t GetIHexSize(String serialized_file) {
     //Serial.printf_P("\r\n[%s] File length: %d\n\r", __func__, file_length);
     //Serial.printf_P("[%s] Payload size: %d\n\r", __func__, data_size);
     return data_size;
+}
+
+/*  _____________________
+   |                     |
+   |     RotaryDelay     |
+   |_____________________|
+*/
+void RotaryDelay(void) {
+    USE_SERIAL.printf_P("\b\b| ");
+    delay(125);
+    USE_SERIAL.printf_P("\b\b/ ");
+    delay(125);
+    USE_SERIAL.printf_P("\b\b- ");
+    delay(125);
+    USE_SERIAL.printf_P("\b\b\\ ");
+    delay(125);
 }

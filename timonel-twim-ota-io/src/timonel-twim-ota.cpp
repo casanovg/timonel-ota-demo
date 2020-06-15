@@ -628,7 +628,11 @@ uint16_t GetIHexSize(String serialized_file) {
     return data_size;
 }
 
-// Function RotaryDelay
+/*  _____________________
+   |                     |
+   |     RotaryDelay     |
+   |_____________________|
+*/
 void RotaryDelay(void) {
     USE_SERIAL.printf_P("\b\b| ");
     delay(125);

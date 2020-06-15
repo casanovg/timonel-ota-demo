@@ -20,8 +20,8 @@
 #include <nb-twi-cmd.h>
 
 #ifndef SSID
-#define SSID "Nicebots.com"
-#define PASS "R2-D2 C-3P0"
+#define SSID "YourSSID"
+#define PASS "Password"
 #endif  // SSID
 
 // Prototypes
