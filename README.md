@@ -3,4 +3,4 @@
 
 There is a simple [flowchart](https://github.com/casanovg/timonel-ota-demo/tree/master/diagrams) showing the workflow implemented by this use-case. The ATtiny85 reset is made through I2C commands, so the user application should support it. Otherwise, a hardware reset solution and a slightly different workflow are needed.
 
-The [hardware needed](https://github.com/casanovg/timonel-ota-demo/blob/media/Timonel-OTA-Demo-Setup-Pic3.jpg) to test this demo is a NodeMCU or another ESP8266 module, an ATtiny85, a LED, and a resistor. There is a [(poor quality) video](https://youtu.be/4Jkap5PMG0U) to take a look at how it works.
+The [hardware needed](https://github.com/casanovg/timonel-ota-demo/blob/media/Timonel-OTA-Demo-Setup-Pic3.jpg) to test this demo is a NodeMCU or another ESP8266 module, an ATtiny85, a LED, and a resistor. There is a [(poor quality) video](https://www.youtube.com/watch?v=4Jkap5PMG0U&cc_load_policy=1) to take a look at how it works.
