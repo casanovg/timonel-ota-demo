@@ -1,7 +1,7 @@
 /*
   timonel-twim-ota.cpp
   =====================
-  Timonel OTA Demo v2.0 HP
+  Timonel OTA Demo v2.1 LittleFS
   ----------------------------------------------------------------------------
   This demo, running on an ESP8266 I2C master, updates an ATtiny85 slave's
   firmware of an over-the-air:
@@ -26,7 +26,7 @@
    |___________________|
 */
 void setup(void) {
-    Serial.begin(SERIAL_BPS);
+    Serial.begin(115200);
     ClrScr();
     delay(3000);
     Serial.printf_P("\n\r");
@@ -378,13 +378,15 @@ String GetHttpDocument(const char ssid[],
 */
 String ReadFile(const char file_name[]) {
     String file_data = "";
-    if (SPIFFS.begin()) {
+    //if (SPIFFS.begin()) {
+    if (LittleFS.begin()) {
         //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system\n\r", __func__);
         // Mount error!
     }
-    File file = SPIFFS.open(file_name, "r");
+    //File file = SPIFFS.open(file_name, "r");
+    File file = LittleFS.open(file_name, "r");
     //Serial.printf_P("[%s] Reading \"%s\" file\n\r", __func__, file_name);
     if (file && file.size()) {
         while (file.available()) {
@@ -396,7 +398,8 @@ String ReadFile(const char file_name[]) {
         Serial.printf_P("[%s] Warning: File \"%s\" empty or unavailable!\n\r", __func__, file_name);
     }
     return file_data;
-    SPIFFS.end();
+    //SPIFFS.end();
+    LittleFS.end();
 }
 
 /*  ___________________
@@ -406,7 +409,8 @@ String ReadFile(const char file_name[]) {
 */
 uint8_t WriteFile(const char file_name[], const String file_data) {
     uint8_t errors = 0;
-    if (SPIFFS.begin()) {
+    //if (SPIFFS.begin()) {
+    if (LittleFS.begin()) {
         //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
@@ -414,7 +418,8 @@ uint8_t WriteFile(const char file_name[], const String file_data) {
         // Mount error!
     }
     // Save file data into the filesystem
-    File file = SPIFFS.open(file_name, "w");
+    //File file = SPIFFS.open(file_name, "w");
+    File file = LittleFS.open(file_name, "w");
     if (!file) {
         Serial.printf_P("[%s] Error opening file for writing!\n\r", __func__);
         errors += 2;
@@ -429,7 +434,8 @@ uint8_t WriteFile(const char file_name[], const String file_data) {
         errors += 3;
         // File writing error!
     }
-    SPIFFS.end();
+    //SPIFFS.end();
+    LittleFS.end();
     return errors;
 }
 
@@ -440,20 +446,23 @@ uint8_t WriteFile(const char file_name[], const String file_data) {
 */
 uint8_t DeleteFile(const char file_name[]) {
     uint8_t errors = 0;
-    if (SPIFFS.begin()) {
+    //if (SPIFFS.begin()) {
+    if (LittleFS.begin()) {
         //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
         errors += 1;
         // Mount error!
     }
-    errors += SPIFFS.remove(file_name);  // This allows overwriting
+    //errors += SPIFFS.remove(file_name);  // This allows overwriting
+    errors += LittleFS.remove(file_name);  // This allows overwriting
     if (errors) {
         //Serial.printf_P("[%s] File deleted successfully ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] File \"%s\" deleting failed!\n\r", __func__, file_name);
     }
-    SPIFFS.end();
+    //SPIFFS.end();
+    LittleFS.end();
     return errors;
 }
 
@@ -464,7 +473,8 @@ uint8_t DeleteFile(const char file_name[]) {
 */
 uint8_t ListFiles(void) {
     uint8_t errors = 0;
-    if (SPIFFS.begin()) {
+    //if (SPIFFS.begin()) {
+    if (LittleFS.begin()) {
         //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
@@ -472,11 +482,13 @@ uint8_t ListFiles(void) {
         // Mount error!
     }
     //Serial.printf_P("[%s] Listing all filesystem files ...\n\r", __func__);
-    Dir dir = SPIFFS.openDir("");
+    //Dir dir = SPIFFS.openDir("");
+    Dir dir = LittleFS.openDir("");
     while (dir.next()) {
         Serial.printf("|-- %s - %d bytes\n\r", dir.fileName().c_str(), (int)dir.fileSize());
     }
-    SPIFFS.end();
+    //SPIFFS.end();
+    LittleFS.end();
     return errors;
 }
 
@@ -488,7 +500,8 @@ uint8_t ListFiles(void) {
 */
 uint8_t Format(void) {
     uint8_t errors = 0;
-    if (SPIFFS.begin()) {
+    //if (SPIFFS.begin()) {
+    if (LittleFS.begin()) {
         //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
@@ -496,11 +509,13 @@ uint8_t Format(void) {
         // Mount error!
     }
     Serial.printf_P("[%s] Formatting the SPIFFS filesystem ...\n\r", __func__);
-    errors += SPIFFS.format();
+    //errors += SPIFFS.format();
+    errors += LittleFS.format();
     if (errors) {
         Serial.printf_P("[%s] Error: Unable to format the filesystem!\n\r", __func__);
     }
-    SPIFFS.end();
+    //SPIFFS.end();
+    LittleFS.end();
     return errors;
 }
 
@@ -512,34 +527,41 @@ uint8_t Format(void) {
 // If destination exists, overwrites it
 uint8_t Rename(const char source_file_name[], const char destination_file_name[]) {
     uint8_t errors = 0;
-    if (SPIFFS.begin()) {
+    //if (SPIFFS.begin()) {
+    if (LittleFS.begin()) {
         //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
         errors += 1;
         // Mount error!
     }
-    SPIFFS.remove(destination_file_name);  // This allows overwriting
-    errors += SPIFFS.rename(source_file_name, destination_file_name);
+    //SPIFFS.remove(destination_file_name);  // This allows overwriting
+    LittleFS.remove(destination_file_name);  // This allows overwriting
+    //errors += SPIFFS.rename(source_file_name, destination_file_name);
+    errors += LittleFS.rename(source_file_name, destination_file_name);
     if (errors) {
         //Serial.printf_P("[%s] File renamed successfully ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] File renaming failed! (%s to %s)\n\r", __func__, source_file_name, destination_file_name);
     }
-    SPIFFS.end();
+    //SPIFFS.end();
+    LittleFS.end();
     return errors;
 }
 
 // Function Exists (If destination exists, overwrites it)
 bool Exists(const char file_name[]) {
-    if (SPIFFS.begin()) {
+    //if (SPIFFS.begin()) {
+    if (LittleFS.begin()) {
         //Serial.printf_P("[%s] SPIFFS filesystem mounted ...\n\r", __func__);
     } else {
         Serial.printf_P("[%s] Error mounting the SPIFFS file system!\n\r", __func__);
         // Mount error!
     }
-    return SPIFFS.exists(file_name);
-    SPIFFS.end();
+    //return SPIFFS.exists(file_name);
+    return LittleFS.exists(file_name);
+    //SPIFFS.end();
+    LittleFS.end();
 }
 
 /*  _________________________
@@ -550,7 +572,7 @@ bool Exists(const char file_name[]) {
 bool ParseIHexFormat(String serialized_file, uint8_t *payload) {
     uint16_t file_len = serialized_file.length();
     uint16_t payload_ix = 0;
-    uint8_t line_count = 0;
+    //uint8_t line_count = 0;
     bool checksum_err = false;
     // Loops through the serialized file
     for (int ix = 0; ix < file_len; ix++) {

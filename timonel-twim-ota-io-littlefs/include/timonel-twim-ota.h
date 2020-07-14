@@ -12,7 +12,8 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <FS.h>
+//#include <FS.h>
+#include "LittleFS.h"
 #include <NbMicro.h>
 #include <TimonelTwiM.h>
 #include <TwiBus.h>
@@ -20,6 +21,8 @@
 #include <nb-twi-cmd.h>
 
 #ifndef SSID
+//#define SSID "YourSSID"
+//#define PASS "Password"
 #define SSID "Nicebots.com"
 #define PASS "R2-D2 C-3P0"
 #endif  // SSID
