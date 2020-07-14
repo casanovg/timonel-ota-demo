@@ -26,7 +26,7 @@
    |___________________|
 */
 void setup(void) {
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BPS);
     ClrScr();
     delay(3000);
     Serial.printf_P("\n\r");
