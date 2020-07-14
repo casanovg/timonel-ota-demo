@@ -44,7 +44,8 @@ const uint8_t MAX_UPDATE_TRIES = 3;
 // Use Firefox browser to get the web site certificate SHA1 fingerprint (case-insensitive)
 const char FINGERPRINT[] PROGMEM = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78 2d 18 64 e0 b7";
 
-#define FW_WEB_URL "/casanovg/timonel-ota-demo/master/fw-attiny85"  // Firmware updates base URL
+//#define FW_WEB_URL "/casanovg/timonel-ota-demo/master/fw-attiny85"  // Firmware updates base URL
+#define FW_WEB_URL "/casanovg/timonel-ota-demo/testbed/fw-attiny85"  // Firmware updates base URL
 #define FW_ONBOARD_VER "/fw-onboard.md"                             // This file keeps the firmware version currently running on the ATtiny85
 #define FW_ONBOARD_LOC "/fw-onboard.hex"                            // Firmware file currently running on the ATtiny85
 #define FW_LATEST_VER "/fw-latest.md"                               // This file keeps the new firmware version to flash the ATtiny85
